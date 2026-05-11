@@ -19,7 +19,13 @@ Cyandie is a modular, extensible, self-hostable backend framework for games, app
 | Protobuf tooling | buf | Modern protobuf management, lint + generate |
 | TCP protocol | TLV + Protobuf | Extensible, self-describing length, cross-language serialization |
 | Auth | JWT (access + refresh) | Stateless access, Redis-backed refresh for revocation |
+| JWT key management | Key rotation | Support multiple keys: old keys verify + new key signs, smooth rotation |
 | Deployment | Modular monolith | Single process, modules communicate via interfaces, future split possible |
+| Admin auth | Independent user system | Separate admin table, login, RBAC — not shared with regular users |
+| Observability | slog + Prometheus | Structured logs via slog, metrics via Prometheus, no OpenTelemetry for MVP |
+| DB migrations | Single dir + prefix | goose with prefixed filenames (NNN_core_xxx, NNN_auth_xxx), native support |
+| TCP Chat scaling | Single instance first | Multi-instance with Redis Pub/Sub routing deferred to future |
+| Platform token storage | Plaintext in DB | Protected by DB access control, encryption deferred to future |
 
 ## Architecture
 
@@ -122,10 +128,9 @@ cyandie/
 │   │   └── Dockerfile
 │   └── docker-compose.yml
 ├── migrations/
-│   ├── core/
-│   ├── chat/
-│   ├── leaderboard/
-│   └── friends/
+│   ├── 001_core_init.sql
+│   ├── 002_core_users.sql
+│   └── ...
 ├── scripts/
 ├── docs/
 ├── go.mod
@@ -153,6 +158,17 @@ Login methods: username/password, email OTP, phone OTP, third-party OAuth.
 OTP delivery: Auth module defines `OTPNotifier` interface. Implementations inject at startup (e.g. SMTP email, SMS gateway). Framework ships with a log-based notifier for development.
 
 Token strategy: JWT access (15min) + Redis-backed refresh (7d, revocable).
+
+JWT key rotation: configuration supports an ordered list of keys. The first key is used for signing; all keys are tried for verification. To rotate: add new key at position 0, deploy, then remove old key after access tokens expire (15min). Keys are loaded from environment variables.
+
+```yaml
+auth:
+  jwt_keys:
+    - kid: "key-2026-05"
+      secret: "${JWT_SECRET_CURRENT}"
+    - kid: "key-2026-04"
+      secret: "${JWT_SECRET_PREVIOUS}"
+```
 
 ### Users
 
@@ -247,6 +263,31 @@ CREATE TABLE platform_bindings (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     UNIQUE(platform, platform_user_id)
 );
+
+-- Admin users (independent from regular users)
+CREATE TABLE admin_users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    username VARCHAR(64) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    role VARCHAR(16) NOT NULL DEFAULT 'admin',  -- super_admin/admin/viewer
+    status VARCHAR(16) NOT NULL DEFAULT 'active',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Audit log
+CREATE TABLE audit_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    operator_id UUID REFERENCES admin_users(id),
+    action VARCHAR(64) NOT NULL,
+    target_type VARCHAR(32) NOT NULL,
+    target_id VARCHAR(255) NOT NULL,
+    before_value JSONB,
+    after_value JSONB,
+    reason TEXT,
+    ip VARCHAR(45),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 ```
 
 ### PostgreSQL Plugin Tables
@@ -323,10 +364,9 @@ CREATE TABLE leaderboard_scores (
 
 ### Migration Strategy
 
-- goose manages SQL migrations
-- Core migrations in `migrations/core/`
-- Plugin migrations in `migrations/{module}/`
-- Plugin `OnStart()` checks and executes its own migrations
+- goose manages SQL migrations in a single `migrations/` directory
+- Filenames use module prefix: `001_core_init.sql`, `002_core_users.sql`, `003_auth_sessions.sql`, `004_chat_rooms.sql`
+- goose executes all migrations in order — no custom multi-dir logic needed
 
 ## Protocols
 
@@ -522,9 +562,12 @@ Connection flow:
 
 ## Observability
 
-- Structured logging with request ID / trace ID
-- API latency metrics
-- TCP connection metrics
-- Redis leaderboard operation metrics
-- Platform API call success rate and latency
-- Admin audit logs
+- Structured logging with request ID / trace ID (slog)
+- Prometheus metrics endpoint at `/metrics`
+  - HTTP request count, latency, error rate (by path, method, status)
+  - gRPC call count, latency, error rate (by service, method)
+  - TCP connection count, message count
+  - Redis operation latency
+  - Platform API call success rate and latency
+- Admin audit logs in PostgreSQL (admin_users, action, target, before/after, reason)
+- No OpenTelemetry for MVP — add if distributed tracing is needed
