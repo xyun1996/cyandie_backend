@@ -60,10 +60,17 @@ func main() {
 	app := core.NewApp()
 	app.SetLogger(log)
 
+	// Load JWT keys from config
+	jwtKeys := make([]auth.JWTKey, len(cfg.Auth.JWTKeys))
+	for i, k := range cfg.Auth.JWTKeys {
+		jwtKeys[i] = auth.JWTKey{KID: k.KID, Secret: []byte(k.Secret)}
+	}
+	if len(jwtKeys) == 0 {
+		jwtKeys = append(jwtKeys, auth.JWTKey{KID: "default", Secret: []byte("change-me-in-production-32byte")})
+	}
+
 	usersModule := users.NewModule(queries)
-	authModule := auth.NewModule(queries, auth.NewKeyManager([]auth.JWTKey{
-		{KID: "default", Secret: []byte("change-me-in-production-32byte")},
-	}), auth.NewSessionStore(auth.NewRedisAdapter(rdb.Client)))
+	authModule := auth.NewModule(queries, auth.NewKeyManager(jwtKeys), auth.NewSessionStore(auth.NewRedisAdapter(rdb.Client)))
 
 	app.Register(usersModule)
 	app.Register(authModule)

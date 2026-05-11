@@ -20,6 +20,15 @@ type DatabaseConfig struct {
 	ConnMaxLifetime string `yaml:"conn_max_lifetime" env:"DATABASE_CONN_MAX_LIFETIME"`
 }
 
+type JWTKeyConfig struct {
+	KID    string `yaml:"kid"`
+	Secret string `yaml:"secret" env:"JWT_SECRET"`
+}
+
+type AuthConfig struct {
+	JWTKeys []JWTKeyConfig `yaml:"jwt_keys"`
+}
+
 type CacheConfig struct {
 	Addr     string `yaml:"addr" env:"CACHE_ADDR"`
 	Password string `yaml:"password" env:"CACHE_PASSWORD"`
@@ -31,6 +40,7 @@ type Config struct {
 	Database DatabaseConfig `yaml:"database"`
 	Cache    CacheConfig    `yaml:"cache"`
 	Logger   logger.Config  `yaml:"logger"`
+	Auth     AuthConfig     `yaml:"auth"`
 }
 
 func defaults() Config {
@@ -85,6 +95,13 @@ func applyEnv(cfg *Config) {
 	for ptr, key := range envMap {
 		if v := os.Getenv(key); v != "" {
 			*ptr = v
+		}
+	}
+
+	// For each JWT key, allow overriding the secret via env
+	for i := range cfg.Auth.JWTKeys {
+		if v := os.Getenv("JWT_SECRET_" + cfg.Auth.JWTKeys[i].KID); v != "" {
+			cfg.Auth.JWTKeys[i].Secret = v
 		}
 	}
 }
