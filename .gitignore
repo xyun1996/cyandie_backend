@@ -1,0 +1,24 @@
+# Binaries
+/server
+/cmd/server/server
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+*.env.local
+
+# Build
+/bin/
+/dist/
+
+# Config with secrets
+configs/config.yaml
+!configs/config.example.yaml
