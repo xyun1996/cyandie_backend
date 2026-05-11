@@ -1,0 +1,37 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: cyandie
+      POSTGRES_PASSWORD: cyandie
+      POSTGRES_DB: cyandie
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  server:
+    build:
+      context: ../..
+      dockerfile: deployments/docker/Dockerfile
+    ports:
+      - "8080:8080"
+      - "9090:9090"
+    environment:
+      DATABASE_DSN: "postgres://cyandie:cyandie@postgres:5432/cyandie?sslmode=disable"
+      CACHE_ADDR: "redis:6379"
+      LOG_LEVEL: "debug"
+      LOG_FORMAT: "text"
+    depends_on:
+      - postgres
+      - redis
+
+volumes:
+  pgdata:
