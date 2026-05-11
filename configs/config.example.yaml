@@ -1,0 +1,18 @@
+server:
+  http_addr: ":8080"
+  grpc_addr: ":9090"
+
+database:
+  dsn: "postgres://cyandie:cyandie@localhost:5432/cyandie?sslmode=disable"
+  max_open_conns: 25
+  max_idle_conns: 5
+  conn_max_lifetime: "5m"
+
+cache:
+  addr: "localhost:6379"
+  password: ""
+  db: 0
+
+logger:
+  level: "info"
+  format: "json"
