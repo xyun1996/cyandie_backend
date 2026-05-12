@@ -35,3 +35,9 @@ rate_limit:
 
 timeout:
   default: "30s"
+
+platforms:
+  wechat:
+    app_id: "${WECHAT_APP_ID}"
+    app_secret: "${WECHAT_APP_SECRET}"
+    redirect_uri: "${WECHAT_REDIRECT_URI}"

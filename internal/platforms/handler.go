@@ -19,12 +19,12 @@ func NewHandler(svc *PlatformService) *Handler {
 }
 
 func (h *Handler) RegisterRoutes(router chi.Router) {
-	router.Get("/api/v1/platforms", h.listPlatforms)
-	router.Get("/api/v1/platforms/{name}/auth-url", h.getAuthURL)
-	router.Post("/api/v1/platforms/{name}/callback", h.callback)
-	router.Post("/api/v1/platforms/{name}/bind", h.bind)
-	router.Delete("/api/v1/platforms/{name}/bind", h.unbind)
-	router.Get("/api/v1/platforms/bindings", h.listBindings)
+	router.Get("/", h.listPlatforms)
+	router.Get("/{name}/auth-url", h.getAuthURL)
+	router.Post("/{name}/callback", h.callback)
+	router.Post("/{name}/bind", h.bind)
+	router.Delete("/{name}/bind", h.unbind)
+	router.Get("/bindings", h.listBindings)
 }
 
 func (h *Handler) listPlatforms(w http.ResponseWriter, r *http.Request) {

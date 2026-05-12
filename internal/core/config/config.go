@@ -46,6 +46,16 @@ type RateLimitConfig struct {
 	Read  RateLimitRule `yaml:"read"`
 }
 
+type WeChatConfig struct {
+	AppID       string `yaml:"app_id" env:"WECHAT_APP_ID"`
+	AppSecret   string `yaml:"app_secret" env:"WECHAT_APP_SECRET"`
+	RedirectURI string `yaml:"redirect_uri" env:"WECHAT_REDIRECT_URI"`
+}
+
+type PlatformsConfig struct {
+	WeChat WeChatConfig `yaml:"wechat"`
+}
+
 type TimeoutConfig struct {
 	Default string            `yaml:"default"`
 	Routes  map[string]string `yaml:"routes"`
@@ -59,6 +69,7 @@ type Config struct {
 	Auth      AuthConfig      `yaml:"auth"`
 	RateLimit RateLimitConfig `yaml:"rate_limit"`
 	Timeout   TimeoutConfig   `yaml:"timeout"`
+	Platforms PlatformsConfig `yaml:"platforms"`
 }
 
 func defaults() Config {
@@ -117,6 +128,11 @@ func applyEnv(cfg *Config) {
 		&cfg.Cache.Password:  "CACHE_PASSWORD",
 		&cfg.Logger.Level:    "LOG_LEVEL",
 		&cfg.Logger.Format:   "LOG_FORMAT",
+
+		// Platform env overrides
+		&cfg.Platforms.WeChat.AppID:       "WECHAT_APP_ID",
+		&cfg.Platforms.WeChat.AppSecret:   "WECHAT_APP_SECRET",
+		&cfg.Platforms.WeChat.RedirectURI: "WECHAT_REDIRECT_URI",
 	}
 	for ptr, key := range envMap {
 		if v := os.Getenv(key); v != "" {

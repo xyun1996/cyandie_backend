@@ -17,6 +17,7 @@ import (
 	"github.com/cyandie/backend/internal/core/middleware"
 	"github.com/cyandie/backend/internal/core/server"
 	"github.com/cyandie/backend/internal/db"
+	"github.com/cyandie/backend/internal/platforms"
 	"github.com/cyandie/backend/internal/users"
 	"github.com/go-chi/chi/v5"
 	"github.com/redis/go-redis/v9"
@@ -97,6 +98,18 @@ func main() {
 	app.Register(usersModule)
 	app.Register(authModule)
 
+	// Platform adapters
+	platformRegistry := platforms.NewPlatformRegistry()
+	if cfg.Platforms.WeChat.AppID != "" {
+		platformRegistry.RegisterOAuth(platforms.NewWeChatProvider(platforms.WeChatConfig{
+			AppID:       cfg.Platforms.WeChat.AppID,
+			AppSecret:   cfg.Platforms.WeChat.AppSecret,
+			RedirectURI: cfg.Platforms.WeChat.RedirectURI,
+		}))
+	}
+	platformsModule := platforms.NewModule(queries, platformRegistry)
+	app.Register(platformsModule)
+
 	healthHandler := health.NewHandler()
 	healthHandler.RegisterRoutes(router)
 
@@ -108,6 +121,12 @@ func main() {
 	})
 	authRouter := router.With(authLimiter.Middleware("auth"))
 	authModule.RegisterRoutes(authRouter)
+
+	// Platform routes with rate limiting
+	router.Route("/api/v1/platforms", func(r chi.Router) {
+		r.Use(authLimiter.Middleware("auth"))
+		platformsModule.RegisterRoutes(r)
+	})
 
 	// Rate limited user routes
 	readLimiter := middleware.NewRateLimiter(redisAdapter, middleware.RateLimitConfig{
