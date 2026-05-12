@@ -36,6 +36,8 @@ func (e *AppError) HTTPStatus() int {
 		return http.StatusNotFound
 	case ErrConflict, ErrUserExists, ErrPlatformBindingExists:
 		return http.StatusConflict
+	case ErrTimeout:
+		return http.StatusServiceUnavailable
 	case ErrRateLimited:
 		return http.StatusTooManyRequests
 	default:
