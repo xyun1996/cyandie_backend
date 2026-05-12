@@ -22,6 +22,25 @@ type Credential struct {
 	CreatedAt  time.Time      `json:"created_at"`
 }
 
+type LeaderboardConfig struct {
+	ID             uuid.UUID             `json:"id"`
+	Code           string                `json:"code"`
+	Name           string                `json:"name"`
+	UpdateStrategy string                `json:"update_strategy"`
+	MaxEntries     sql.NullInt32         `json:"max_entries"`
+	Metadata       pqtype.NullRawMessage `json:"metadata"`
+	CreatedAt      time.Time             `json:"created_at"`
+	UpdatedAt      time.Time             `json:"updated_at"`
+}
+
+type LeaderboardScore struct {
+	ID          uuid.UUID `json:"id"`
+	BoardID     uuid.UUID `json:"board_id"`
+	UserID      uuid.UUID `json:"user_id"`
+	Score       float64   `json:"score"`
+	SubmittedAt time.Time `json:"submitted_at"`
+}
+
 type PlatformBinding struct {
 	ID             uuid.UUID             `json:"id"`
 	UserID         uuid.UUID             `json:"user_id"`
