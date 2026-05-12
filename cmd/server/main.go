@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log/slog"
 	"os"
+	"time"
 
 	"github.com/cyandie/backend/internal/auth"
 	"github.com/cyandie/backend/internal/core"
@@ -17,7 +19,21 @@ import (
 	"github.com/cyandie/backend/internal/db"
 	"github.com/cyandie/backend/internal/users"
 	"github.com/go-chi/chi/v5"
+	"github.com/redis/go-redis/v9"
 )
+
+// redisLimiterAdapter adapts *redis.Client to the middleware.RedisLimiterClient interface.
+type redisLimiterAdapter struct {
+	client *redis.Client
+}
+
+func (a *redisLimiterAdapter) Incr(ctx context.Context, key string) *redis.IntCmd {
+	return a.client.Incr(ctx, key)
+}
+
+func (a *redisLimiterAdapter) Expire(ctx context.Context, key string, ttl time.Duration) *redis.BoolCmd {
+	return a.client.Expire(ctx, key, ttl)
+}
 
 func main() {
 	configPath := flag.String("config", "", "path to config file")
@@ -53,6 +69,12 @@ func main() {
 	router := chi.NewRouter()
 	router.Use(middleware.RequestID)
 	router.Use(middleware.Recovery)
+
+	defaultTimeout, _ := time.ParseDuration(cfg.Timeout.Default)
+	if defaultTimeout == 0 {
+		defaultTimeout = 30 * time.Second
+	}
+	router.Use(middleware.Timeout(defaultTimeout))
 	router.Use(middleware.Logger(log))
 
 	httpSrv := server.NewHTTPServer(cfg.Server.HTTPAddr, router)
@@ -77,6 +99,23 @@ func main() {
 
 	healthHandler := health.NewHandler()
 	healthHandler.RegisterRoutes(router)
+
+	// Rate limited auth routes
+	redisAdapter := &redisLimiterAdapter{client: rdb.Client}
+	authLimiter := middleware.NewRateLimiter(redisAdapter, middleware.RateLimitConfig{
+		Limit:  cfg.RateLimit.Auth.Limit,
+		Window: cfg.RateLimit.Auth.Window,
+	})
+	authRouter := router.With(authLimiter.Middleware("auth"))
+	authModule.RegisterRoutes(authRouter)
+
+	// Rate limited user routes
+	readLimiter := middleware.NewRateLimiter(redisAdapter, middleware.RateLimitConfig{
+		Limit:  cfg.RateLimit.Read.Limit,
+		Window: cfg.RateLimit.Read.Window,
+	})
+	usersRouter := router.With(readLimiter.Middleware("read"))
+	usersModule.RegisterRoutes(usersRouter)
 
 	log.Info("starting server", "addr", cfg.Server.HTTPAddr)
 
