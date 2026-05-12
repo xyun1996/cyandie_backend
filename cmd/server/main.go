@@ -17,6 +17,7 @@ import (
 	"github.com/cyandie/backend/internal/core/middleware"
 	"github.com/cyandie/backend/internal/core/server"
 	"github.com/cyandie/backend/internal/db"
+	"github.com/cyandie/backend/internal/leaderboard"
 	"github.com/cyandie/backend/internal/platforms"
 	"github.com/cyandie/backend/internal/users"
 	"github.com/go-chi/chi/v5"
@@ -110,6 +111,9 @@ func main() {
 	platformsModule := platforms.NewModule(queries, platformRegistry)
 	app.Register(platformsModule)
 
+	leaderboardModule := leaderboard.NewModule(queries, rdb.Client)
+	app.Register(leaderboardModule)
+
 	healthHandler := health.NewHandler()
 	healthHandler.RegisterRoutes(router)
 
@@ -126,6 +130,13 @@ func main() {
 	router.Route("/api/v1/platforms", func(r chi.Router) {
 		r.Use(authLimiter.Middleware("auth"))
 		platformsModule.RegisterRoutes(r)
+	})
+
+	// Leaderboard routes with rate limiting
+	router.Route("/api/v1/leaderboard", func(r chi.Router) {
+		readLimiter := middleware.NewRateLimiter(redisAdapter, middleware.RateLimitConfig(cfg.RateLimit.Read))
+		r.Use(readLimiter.Middleware("read"))
+		leaderboardModule.RegisterRoutes(r)
 	})
 
 	// Rate limited user routes
