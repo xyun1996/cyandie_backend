@@ -16,3 +16,8 @@ cache:
 logger:
   level: "info"
   format: "json"
+
+auth:
+  jwt_keys:
+    - kid: "key-2026-05"
+      secret: "${JWT_SECRET_CURRENT}"
