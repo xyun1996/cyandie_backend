@@ -32,7 +32,7 @@ func (e *AppError) HTTPStatus() int {
 		return http.StatusUnauthorized
 	case ErrForbidden, ErrUserBanned:
 		return http.StatusForbidden
-	case ErrNotFound:
+	case ErrNotFound, ErrPlatformNotSupported:
 		return http.StatusNotFound
 	case ErrConflict, ErrUserExists, ErrPlatformBindingExists:
 		return http.StatusConflict
