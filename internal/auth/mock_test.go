@@ -102,3 +102,51 @@ func (m *mockQueries) RevokeSession(_ context.Context, _ uuid.UUID) (db.UserSess
 func (m *mockQueries) RevokeSessionsByUserID(_ context.Context, _ uuid.UUID) ([]db.UserSession, error) {
 	return nil, nil
 }
+func (m *mockQueries) AddRoomMember(_ context.Context, _ db.AddRoomMemberParams) (db.ChatRoomMember, error) {
+	return db.ChatRoomMember{}, nil
+}
+func (m *mockQueries) CreateChatMessage(_ context.Context, _ db.CreateChatMessageParams) (db.ChatMessage, error) {
+	return db.ChatMessage{}, nil
+}
+func (m *mockQueries) CreateChatRoom(_ context.Context, _ db.CreateChatRoomParams) (db.ChatRoom, error) {
+	return db.ChatRoom{}, nil
+}
+func (m *mockQueries) GetChatMessages(_ context.Context, _ db.GetChatMessagesParams) ([]db.ChatMessage, error) {
+	return nil, nil
+}
+func (m *mockQueries) GetChatRoom(_ context.Context, _ uuid.UUID) (db.ChatRoom, error) {
+	return db.ChatRoom{}, sql.ErrNoRows
+}
+func (m *mockQueries) GetRoomMembers(_ context.Context, _ uuid.UUID) ([]db.ChatRoomMember, error) {
+	return nil, nil
+}
+func (m *mockQueries) RemoveRoomMember(_ context.Context, _ db.RemoveRoomMemberParams) (db.ChatRoomMember, error) {
+	return db.ChatRoomMember{}, nil
+}
+func (m *mockQueries) CountUserCredentials(_ context.Context, _ uuid.UUID) (int64, error) {
+	return 0, nil
+}
+func (m *mockQueries) CreateLeaderboardConfig(_ context.Context, _ db.CreateLeaderboardConfigParams) (db.LeaderboardConfig, error) {
+	return db.LeaderboardConfig{}, nil
+}
+func (m *mockQueries) CreatePlatformBinding(_ context.Context, _ db.CreatePlatformBindingParams) (db.PlatformBinding, error) {
+	return db.PlatformBinding{}, nil
+}
+func (m *mockQueries) CreateScore(_ context.Context, _ db.CreateScoreParams) (db.LeaderboardScore, error) {
+	return db.LeaderboardScore{}, nil
+}
+func (m *mockQueries) DeletePlatformBinding(_ context.Context, _ db.DeletePlatformBindingParams) (db.PlatformBinding, error) {
+	return db.PlatformBinding{}, nil
+}
+func (m *mockQueries) GetLeaderboardConfig(_ context.Context, _ string) (db.LeaderboardConfig, error) {
+	return db.LeaderboardConfig{}, sql.ErrNoRows
+}
+func (m *mockQueries) GetPlatformBinding(_ context.Context, _ db.GetPlatformBindingParams) (db.PlatformBinding, error) {
+	return db.PlatformBinding{}, sql.ErrNoRows
+}
+func (m *mockQueries) GetPlatformBindingsByUserID(_ context.Context, _ uuid.UUID) ([]db.PlatformBinding, error) {
+	return nil, nil
+}
+func (m *mockQueries) ListLeaderboardConfigs(_ context.Context) ([]db.LeaderboardConfig, error) {
+	return nil, nil
+}

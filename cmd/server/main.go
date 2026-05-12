@@ -18,6 +18,7 @@ import (
 	"github.com/cyandie/backend/internal/core/server"
 	"github.com/cyandie/backend/internal/db"
 	"github.com/cyandie/backend/internal/leaderboard"
+	"github.com/cyandie/backend/internal/chat"
 	"github.com/cyandie/backend/internal/platforms"
 	"github.com/cyandie/backend/internal/users"
 	"github.com/go-chi/chi/v5"
@@ -110,6 +111,10 @@ func main() {
 	}
 	platformsModule := platforms.NewModule(queries, platformRegistry)
 	app.Register(platformsModule)
+
+	chatModule := chat.NewModule(queries, ":9091")
+	app.Register(chatModule)
+	chatModule.RegisterRoutes(router)
 
 	leaderboardModule := leaderboard.NewModule(queries, rdb.Client)
 	app.Register(leaderboardModule)
