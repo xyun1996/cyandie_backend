@@ -11,11 +11,16 @@ import (
 )
 
 type Querier interface {
+	CountUserCredentials(ctx context.Context, userID uuid.UUID) (int64, error)
 	CreateCredential(ctx context.Context, arg CreateCredentialParams) (Credential, error)
+	CreatePlatformBinding(ctx context.Context, arg CreatePlatformBindingParams) (PlatformBinding, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (UserSession, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DeletePlatformBinding(ctx context.Context, arg DeletePlatformBindingParams) (PlatformBinding, error)
 	GetCredentialByTypeIdentifier(ctx context.Context, arg GetCredentialByTypeIdentifierParams) (Credential, error)
 	GetCredentialsByUserID(ctx context.Context, userID uuid.UUID) ([]Credential, error)
+	GetPlatformBinding(ctx context.Context, arg GetPlatformBindingParams) (PlatformBinding, error)
+	GetPlatformBindingsByUserID(ctx context.Context, userID uuid.UUID) ([]PlatformBinding, error)
 	GetSessionByID(ctx context.Context, id uuid.UUID) (UserSession, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)

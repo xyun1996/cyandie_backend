@@ -33,4 +33,6 @@ const (
 	ErrPlatformNotSupported  = "PLATFORM_NOT_SUPPORTED"
 	ErrPlatformAuthFailed    = "PLATFORM_AUTH_FAILED"
 	ErrPlatformBindingExists = "PLATFORM_BINDING_EXISTS"
+	ErrPlatformNotBound      = "PLATFORM_NOT_BOUND"
+	ErrLastCredential        = "LAST_CREDENTIAL"
 )

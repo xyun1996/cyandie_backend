@@ -40,6 +40,10 @@ func (e *AppError) HTTPStatus() int {
 		return http.StatusServiceUnavailable
 	case ErrRateLimited:
 		return http.StatusTooManyRequests
+	case ErrPlatformNotBound:
+		return http.StatusNotFound
+	case ErrLastCredential:
+		return http.StatusConflict
 	default:
 		return http.StatusInternalServerError
 	}

@@ -22,6 +22,19 @@ type Credential struct {
 	CreatedAt  time.Time      `json:"created_at"`
 }
 
+type PlatformBinding struct {
+	ID             uuid.UUID             `json:"id"`
+	UserID         uuid.UUID             `json:"user_id"`
+	Platform       string                `json:"platform"`
+	PlatformUserID string                `json:"platform_user_id"`
+	AccessToken    string                `json:"access_token"`
+	RefreshToken   string                `json:"refresh_token"`
+	ExpiresAt      sql.NullTime          `json:"expires_at"`
+	Metadata       pqtype.NullRawMessage `json:"metadata"`
+	CreatedAt      time.Time             `json:"created_at"`
+	UpdatedAt      time.Time             `json:"updated_at"`
+}
+
 type User struct {
 	ID          uuid.UUID             `json:"id"`
 	Username    string                `json:"username"`
