@@ -94,6 +94,27 @@ func (m *mockLBQueries) GetPlatformBindingsByUserID(_ context.Context, _ uuid.UU
 func (m *mockLBQueries) CreatePlatformBinding(_ context.Context, _ db.CreatePlatformBindingParams) (db.PlatformBinding, error) { return db.PlatformBinding{}, nil }
 func (m *mockLBQueries) DeletePlatformBinding(_ context.Context, _ db.DeletePlatformBindingParams) (db.PlatformBinding, error) { return db.PlatformBinding{}, nil }
 func (m *mockLBQueries) CountUserCredentials(_ context.Context, _ uuid.UUID) (int64, error) { return 0, nil }
+func (m *mockLBQueries) AddRoomMember(_ context.Context, _ db.AddRoomMemberParams) (db.ChatRoomMember, error) {
+	return db.ChatRoomMember{}, nil
+}
+func (m *mockLBQueries) CreateChatMessage(_ context.Context, _ db.CreateChatMessageParams) (db.ChatMessage, error) {
+	return db.ChatMessage{}, nil
+}
+func (m *mockLBQueries) CreateChatRoom(_ context.Context, _ db.CreateChatRoomParams) (db.ChatRoom, error) {
+	return db.ChatRoom{}, nil
+}
+func (m *mockLBQueries) GetChatMessages(_ context.Context, _ db.GetChatMessagesParams) ([]db.ChatMessage, error) {
+	return nil, nil
+}
+func (m *mockLBQueries) GetChatRoom(_ context.Context, _ uuid.UUID) (db.ChatRoom, error) {
+	return db.ChatRoom{}, sql.ErrNoRows
+}
+func (m *mockLBQueries) GetRoomMembers(_ context.Context, _ uuid.UUID) ([]db.ChatRoomMember, error) {
+	return nil, nil
+}
+func (m *mockLBQueries) RemoveRoomMember(_ context.Context, _ db.RemoveRoomMemberParams) (db.ChatRoomMember, error) {
+	return db.ChatRoomMember{}, nil
+}
 
 func newTestLBService() *LeaderboardService {
 	q := &mockLBQueries{config: db.LeaderboardConfig{

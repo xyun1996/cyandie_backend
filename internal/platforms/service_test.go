@@ -86,6 +86,39 @@ func (m *platformMockQueries) RevokeSession(_ context.Context, _ uuid.UUID) (db.
 func (m *platformMockQueries) RevokeSessionsByUserID(_ context.Context, _ uuid.UUID) ([]db.UserSession, error) {
 	return nil, nil
 }
+func (m *platformMockQueries) AddRoomMember(_ context.Context, _ db.AddRoomMemberParams) (db.ChatRoomMember, error) {
+	return db.ChatRoomMember{}, nil
+}
+func (m *platformMockQueries) CreateChatMessage(_ context.Context, _ db.CreateChatMessageParams) (db.ChatMessage, error) {
+	return db.ChatMessage{}, nil
+}
+func (m *platformMockQueries) CreateChatRoom(_ context.Context, _ db.CreateChatRoomParams) (db.ChatRoom, error) {
+	return db.ChatRoom{}, nil
+}
+func (m *platformMockQueries) GetChatMessages(_ context.Context, _ db.GetChatMessagesParams) ([]db.ChatMessage, error) {
+	return nil, nil
+}
+func (m *platformMockQueries) GetChatRoom(_ context.Context, _ uuid.UUID) (db.ChatRoom, error) {
+	return db.ChatRoom{}, sql.ErrNoRows
+}
+func (m *platformMockQueries) GetRoomMembers(_ context.Context, _ uuid.UUID) ([]db.ChatRoomMember, error) {
+	return nil, nil
+}
+func (m *platformMockQueries) RemoveRoomMember(_ context.Context, _ db.RemoveRoomMemberParams) (db.ChatRoomMember, error) {
+	return db.ChatRoomMember{}, nil
+}
+func (m *platformMockQueries) CreateLeaderboardConfig(_ context.Context, _ db.CreateLeaderboardConfigParams) (db.LeaderboardConfig, error) {
+	return db.LeaderboardConfig{}, nil
+}
+func (m *platformMockQueries) ListLeaderboardConfigs(_ context.Context) ([]db.LeaderboardConfig, error) {
+	return nil, nil
+}
+func (m *platformMockQueries) CreateScore(_ context.Context, _ db.CreateScoreParams) (db.LeaderboardScore, error) {
+	return db.LeaderboardScore{}, nil
+}
+func (m *platformMockQueries) GetLeaderboardConfig(_ context.Context, _ string) (db.LeaderboardConfig, error) {
+	return db.LeaderboardConfig{}, sql.ErrNoRows
+}
 
 func newTestPlatformService() *PlatformService {
 	reg := NewPlatformRegistry()

@@ -1,0 +1,193 @@
+package chat
+
+import (
+	"context"
+	"log/slog"
+
+	chatv1 "github.com/cyandie/backend/api/proto/chat/v1"
+	"github.com/cyandie/backend/internal/db"
+	"github.com/google/uuid"
+	"google.golang.org/protobuf/proto"
+)
+
+type ChatService struct {
+	queries db.Querier
+	server  *TCPServer
+}
+
+func NewChatService(queries db.Querier, server *TCPServer) *ChatService {
+	return &ChatService{queries: queries, server: server}
+}
+
+func (s *ChatService) Start() error {
+	s.server.OnConnect(s.handleConnect)
+	s.server.OnDisconnect(s.handleDisconnect)
+	s.server.OnMessage(s.handleMessage)
+	return s.server.Start()
+}
+
+func (s *ChatService) Stop() error { return s.server.Close() }
+
+func (s *ChatService) handleConnect(conn *Connection) {
+	slog.Info("client connected", "conn_id", conn.ID)
+}
+
+func (s *ChatService) handleDisconnect(conn *Connection) {
+	slog.Info("client disconnected", "conn_id", conn.ID, "user_id", conn.UserID)
+}
+
+func (s *ChatService) handleMessage(conn *Connection, frame *Frame) {
+	env := &chatv1.ChatEnvelope{}
+	if err := proto.Unmarshal(frame.Value, env); err != nil {
+		slog.Error("unmarshal message", "error", err)
+		return
+	}
+
+	switch env.Type {
+	case chatv1.MessageType_AUTH:
+		s.handleAuth(conn, env)
+	case chatv1.MessageType_HEARTBEAT:
+		conn.Send(Frame{Type: uint16(chatv1.MessageType_HEARTBEAT_ACK)})
+	case chatv1.MessageType_JOIN_ROOM:
+		s.handleJoinRoom(conn, env)
+	case chatv1.MessageType_LEAVE_ROOM:
+		s.handleLeaveRoom(conn, env)
+	case chatv1.MessageType_SEND_MSG:
+		s.handleSendMessage(conn, env)
+	}
+}
+
+func (s *ChatService) handleAuth(conn *Connection, env *chatv1.ChatEnvelope) {
+	req := env.GetAuthRequest()
+	if req == nil || req.AccessToken == "" {
+		s.sendError(conn, "BAD_REQUEST", "missing access token")
+		return
+	}
+	// TODO: validate JWT token via AuthService
+	// For now, accept the token as user_id
+	conn.UserID = req.AccessToken
+
+	resp := &chatv1.ChatEnvelope{
+		Type: chatv1.MessageType_AUTH_OK,
+		Payload: &chatv1.ChatEnvelope_AuthResponse{
+			AuthResponse: &chatv1.AuthResponse{UserId: conn.UserID},
+		},
+	}
+	s.sendEnvelope(conn, resp)
+}
+
+func (s *ChatService) handleJoinRoom(conn *Connection, env *chatv1.ChatEnvelope) {
+	if conn.UserID == "" {
+		s.sendError(conn, "UNAUTHORIZED", "not authenticated")
+		return
+	}
+	req := env.GetJoinRoomRequest()
+	if req == nil {
+		s.sendError(conn, "BAD_REQUEST", "missing room_id")
+		return
+	}
+
+	uid, _ := uuid.Parse(conn.UserID)
+	roomUID, _ := uuid.Parse(req.RoomId)
+	_, err := s.queries.AddRoomMember(context.Background(), db.AddRoomMemberParams{
+		RoomID: roomUID, UserID: uid, Role: "member",
+	})
+	if err != nil {
+		s.sendError(conn, "INTERNAL_ERROR", "failed to join room")
+		return
+	}
+
+	resp := &chatv1.ChatEnvelope{
+		Type: chatv1.MessageType_JOIN_ROOM_OK,
+		Payload: &chatv1.ChatEnvelope_JoinRoomResponse{
+			JoinRoomResponse: &chatv1.JoinRoomResponse{RoomId: req.RoomId},
+		},
+	}
+	s.sendEnvelope(conn, resp)
+}
+
+func (s *ChatService) handleLeaveRoom(conn *Connection, env *chatv1.ChatEnvelope) {
+	if conn.UserID == "" {
+		s.sendError(conn, "UNAUTHORIZED", "not authenticated")
+		return
+	}
+	req := env.GetLeaveRoomRequest()
+	if req == nil {
+		s.sendError(conn, "BAD_REQUEST", "missing room_id")
+		return
+	}
+
+	uid, _ := uuid.Parse(conn.UserID)
+	roomUID, _ := uuid.Parse(req.RoomId)
+	s.queries.RemoveRoomMember(context.Background(), db.RemoveRoomMemberParams{
+		RoomID: roomUID, UserID: uid,
+	})
+
+	resp := &chatv1.ChatEnvelope{
+		Type: chatv1.MessageType_LEAVE_ROOM_OK,
+		Payload: &chatv1.ChatEnvelope_LeaveRoomResponse{
+			LeaveRoomResponse: &chatv1.LeaveRoomResponse{RoomId: req.RoomId},
+		},
+	}
+	s.sendEnvelope(conn, resp)
+}
+
+func (s *ChatService) handleSendMessage(conn *Connection, env *chatv1.ChatEnvelope) {
+	if conn.UserID == "" {
+		s.sendError(conn, "UNAUTHORIZED", "not authenticated")
+		return
+	}
+	req := env.GetSendMessageRequest()
+	if req == nil {
+		s.sendError(conn, "BAD_REQUEST", "missing message data")
+		return
+	}
+
+	uid, _ := uuid.Parse(conn.UserID)
+	roomUID, _ := uuid.Parse(req.RoomId)
+	msg, err := s.queries.CreateChatMessage(context.Background(), db.CreateChatMessageParams{
+		RoomID:   roomUID,
+		SenderID: uid,
+		Content:  req.Content,
+		Type:     req.Type,
+	})
+	if err != nil {
+		s.sendError(conn, "INTERNAL_ERROR", "failed to save message")
+		return
+	}
+
+	recv := &chatv1.ChatEnvelope{
+		Type: chatv1.MessageType_RECV_MSG,
+		Payload: &chatv1.ChatEnvelope_ReceiveMessage{
+			ReceiveMessage: &chatv1.ReceiveMessage{
+				RoomId:    req.RoomId,
+				SenderId:  conn.UserID,
+				Content:   req.Content,
+				Type:      req.Type,
+				Timestamp: msg.CreatedAt.Unix(),
+				MessageId: msg.ID.String(),
+			},
+		},
+	}
+	s.broadcastEnvelope(req.RoomId, recv, conn.ID)
+}
+
+func (s *ChatService) sendEnvelope(conn *Connection, env *chatv1.ChatEnvelope) {
+	data, _ := proto.Marshal(env)
+	conn.Send(Frame{Type: uint16(env.Type), Value: data})
+}
+
+func (s *ChatService) broadcastEnvelope(roomID string, env *chatv1.ChatEnvelope, exclude string) {
+	data, _ := proto.Marshal(env)
+	s.server.Broadcast(roomID, Frame{Type: uint16(env.Type), Value: data}, exclude)
+}
+
+func (s *ChatService) sendError(conn *Connection, code, message string) {
+	resp := &chatv1.ChatEnvelope{
+		Type: chatv1.MessageType_ERROR,
+		Payload: &chatv1.ChatEnvelope_Error{
+			Error: &chatv1.ErrorMessage{Code: code, Message: message},
+		},
+	}
+	s.sendEnvelope(conn, resp)
+}
