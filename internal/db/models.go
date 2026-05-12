@@ -12,6 +12,31 @@ import (
 	"github.com/sqlc-dev/pqtype"
 )
 
+type ChatMessage struct {
+	ID        uuid.UUID `json:"id"`
+	RoomID    uuid.UUID `json:"room_id"`
+	SenderID  uuid.UUID `json:"sender_id"`
+	Content   string    `json:"content"`
+	Type      string    `json:"type"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+type ChatRoom struct {
+	ID        uuid.UUID             `json:"id"`
+	Type      string                `json:"type"`
+	Name      sql.NullString        `json:"name"`
+	Metadata  pqtype.NullRawMessage `json:"metadata"`
+	CreatedAt time.Time             `json:"created_at"`
+}
+
+type ChatRoomMember struct {
+	ID       uuid.UUID `json:"id"`
+	RoomID   uuid.UUID `json:"room_id"`
+	UserID   uuid.UUID `json:"user_id"`
+	Role     string    `json:"role"`
+	JoinedAt time.Time `json:"joined_at"`
+}
+
 type Credential struct {
 	ID         uuid.UUID      `json:"id"`
 	UserID     uuid.UUID      `json:"user_id"`
