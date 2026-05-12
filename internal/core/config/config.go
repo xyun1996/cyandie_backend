@@ -35,12 +35,30 @@ type CacheConfig struct {
 	DB       int    `yaml:"db" env:"CACHE_DB"`
 }
 
+type RateLimitRule struct {
+	Limit  int    `yaml:"limit"`
+	Window string `yaml:"window"`
+}
+
+type RateLimitConfig struct {
+	Auth  RateLimitRule `yaml:"auth"`
+	Write RateLimitRule `yaml:"write"`
+	Read  RateLimitRule `yaml:"read"`
+}
+
+type TimeoutConfig struct {
+	Default string            `yaml:"default"`
+	Routes  map[string]string `yaml:"routes"`
+}
+
 type Config struct {
-	Server   ServerConfig   `yaml:"server"`
-	Database DatabaseConfig `yaml:"database"`
-	Cache    CacheConfig    `yaml:"cache"`
-	Logger   logger.Config  `yaml:"logger"`
-	Auth     AuthConfig     `yaml:"auth"`
+	Server    ServerConfig    `yaml:"server"`
+	Database  DatabaseConfig  `yaml:"database"`
+	Cache     CacheConfig     `yaml:"cache"`
+	Logger    logger.Config   `yaml:"logger"`
+	Auth      AuthConfig      `yaml:"auth"`
+	RateLimit RateLimitConfig `yaml:"rate_limit"`
+	Timeout   TimeoutConfig   `yaml:"timeout"`
 }
 
 func defaults() Config {
@@ -60,6 +78,14 @@ func defaults() Config {
 		Logger: logger.Config{
 			Level:  "info",
 			Format: "json",
+		},
+		RateLimit: RateLimitConfig{
+			Auth:  RateLimitRule{Limit: 10, Window: "1m"},
+			Write: RateLimitRule{Limit: 30, Window: "1m"},
+			Read:  RateLimitRule{Limit: 60, Window: "1m"},
+		},
+		Timeout: TimeoutConfig{
+			Default: "30s",
 		},
 	}
 }

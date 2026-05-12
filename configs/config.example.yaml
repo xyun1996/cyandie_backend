@@ -21,3 +21,17 @@ auth:
   jwt_keys:
     - kid: "key-2026-05"
       secret: "${JWT_SECRET_CURRENT}"
+
+rate_limit:
+  auth:
+    limit: 10
+    window: "1m"
+  write:
+    limit: 30
+    window: "1m"
+  read:
+    limit: 60
+    window: "1m"
+
+timeout:
+  default: "30s"
