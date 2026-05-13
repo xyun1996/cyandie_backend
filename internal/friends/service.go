@@ -17,13 +17,23 @@ const (
 	acceptedStatus = "accepted"
 )
 
-type FriendsService struct {
-	queries db.Querier
-	rdb     *redis.Client
+// PresenceNotifier pushes real-time social events to users.
+// Defined locally to avoid circular import with chat package.
+type PresenceNotifier interface {
+	NotifyOnline(ctx context.Context, userID, username string, friendIDs []string)
+	NotifyOffline(ctx context.Context, userID string, friendIDs []string)
+	NotifyFriendRemoved(ctx context.Context, targetUserID, removedByID string)
+	NotifyBlocked(ctx context.Context, blockedUserID, blockerID string)
 }
 
-func NewFriendsService(queries db.Querier, rdb *redis.Client) *FriendsService {
-	return &FriendsService{queries: queries, rdb: rdb}
+type FriendsService struct {
+	queries  db.Querier
+	rdb      *redis.Client
+	notifier PresenceNotifier
+}
+
+func NewFriendsService(queries db.Querier, rdb *redis.Client, notifier PresenceNotifier) *FriendsService {
+	return &FriendsService{queries: queries, rdb: rdb, notifier: notifier}
 }
 
 func (s *FriendsService) SendRequest(ctx context.Context, fromUserID, toUserID string) (*db.Friendship, error) {
@@ -162,4 +172,121 @@ func (s *FriendsService) GetOnlineFriends(ctx context.Context, userID string) ([
 		}
 	}
 	return online, nil
+}
+
+func (s *FriendsService) Block(ctx context.Context, blockerID, blockedID, reason string) error {
+	bid, err := uuid.Parse(blockerID)
+	if err != nil {
+		return errors.New(errors.ErrBadRequest, "invalid blocker id")
+	}
+	blid, err := uuid.Parse(blockedID)
+	if err != nil {
+		return errors.New(errors.ErrBadRequest, "invalid blocked id")
+	}
+	if blockerID == blockedID {
+		return errors.New(errors.ErrBadRequest, "cannot block yourself")
+	}
+
+	_, err = s.queries.CreateBlockRelation(ctx, db.CreateBlockRelationParams{
+		BlockerID: bid,
+		BlockedID: blid,
+		Reason:    sql.NullString{String: reason, Valid: reason != ""},
+	})
+	if err != nil {
+		return errors.New(errors.ErrInternal, "failed to create block relation")
+	}
+
+	// Delete friendship if exists
+	_, _ = s.queries.DeleteFriendshipByUsers(ctx, db.DeleteFriendshipByUsersParams{
+		UserID:   bid,
+		FriendID: blid,
+	})
+
+	// Reject pending friend requests involving both users
+	pending, _ := s.queries.ListPendingRequests(ctx, bid)
+	for _, f := range pending {
+		if f.Status == pendingStatus && (f.FriendID == blid || f.UserID == blid) {
+			s.queries.UpdateFriendshipStatus(ctx, db.UpdateFriendshipStatusParams{
+				ID:     f.ID,
+				Status: "rejected",
+			})
+		}
+	}
+
+	// Update Redis cache
+	if s.rdb != nil {
+		s.rdb.SAdd(ctx, fmt.Sprintf("friends:blocked:%s", blockerID), blockedID)
+	}
+
+	// Notify blocked user
+	if s.notifier != nil {
+		s.notifier.NotifyBlocked(ctx, blockedID, blockerID)
+	}
+
+	return nil
+}
+
+func (s *FriendsService) Unblock(ctx context.Context, blockerID, blockedID string) error {
+	bid, err := uuid.Parse(blockerID)
+	if err != nil {
+		return errors.New(errors.ErrBadRequest, "invalid blocker id")
+	}
+	blid, err := uuid.Parse(blockedID)
+	if err != nil {
+		return errors.New(errors.ErrBadRequest, "invalid blocked id")
+	}
+
+	_, err = s.queries.DeleteBlockRelation(ctx, db.DeleteBlockRelationParams{
+		BlockerID: bid,
+		BlockedID: blid,
+	})
+	if err != nil {
+		return errors.New(errors.ErrInternal, "failed to delete block relation")
+	}
+
+	if s.rdb != nil {
+		s.rdb.SRem(ctx, fmt.Sprintf("friends:blocked:%s", blockerID), blockedID)
+	}
+
+	return nil
+}
+
+func (s *FriendsService) IsBlocked(ctx context.Context, targetUserID, byUserID string) (bool, error) {
+	// Check Redis first
+	if s.rdb != nil {
+		isMember, err := s.rdb.SIsMember(ctx, fmt.Sprintf("friends:blocked:%s", targetUserID), byUserID).Result()
+		if err == nil {
+			return isMember, nil
+		}
+	}
+
+	// Fallback to DB
+	tid, err := uuid.Parse(targetUserID)
+	if err != nil {
+		return false, errors.New(errors.ErrBadRequest, "invalid target user id")
+	}
+	bid, err := uuid.Parse(byUserID)
+	if err != nil {
+		return false, errors.New(errors.ErrBadRequest, "invalid by user id")
+	}
+
+	_, err = s.queries.IsBlockedBy(ctx, db.IsBlockedByParams{
+		BlockerID: tid,
+		BlockedID: bid,
+	})
+	if err == sql.ErrNoRows {
+		return false, nil
+	}
+	if err != nil {
+		return false, errors.New(errors.ErrInternal, "failed to check block relation")
+	}
+	return true, nil
+}
+
+func (s *FriendsService) ListBlockedUsers(ctx context.Context, userID string) ([]db.BlockRelation, error) {
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, errors.New(errors.ErrBadRequest, "invalid user id")
+	}
+	return s.queries.ListBlockedUsers(ctx, uid)
 }
