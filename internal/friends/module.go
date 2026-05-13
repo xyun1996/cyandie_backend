@@ -16,7 +16,7 @@ type Module struct {
 }
 
 func NewModule(queries db.Querier, rdb *redis.Client) *Module {
-	service := NewFriendsService(queries, rdb)
+	service := NewFriendsService(queries, rdb, nil)
 	handler := NewFriendsHandler(service)
 	return &Module{handler: handler, service: service}
 }

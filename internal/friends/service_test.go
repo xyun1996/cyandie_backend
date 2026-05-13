@@ -149,7 +149,7 @@ func TestFriendsService_SendRequest(t *testing.T) {
 		friendErr:        sql.ErrNoRows,
 		createFriendship: db.Friendship{ID: uuid.New(), UserID: from, FriendID: to, Status: "pending"},
 	}
-	svc := NewFriendsService(q, nil)
+	svc := NewFriendsService(q, nil, nil)
 
 	f, err := svc.SendRequest(context.Background(), from.String(), to.String())
 	if err != nil {
@@ -175,7 +175,7 @@ func TestFriendsService_AcceptRequest(t *testing.T) {
 	q := &mockFriendsQueries{
 		friendship: db.Friendship{ID: fid, Status: "accepted"},
 	}
-	svc := NewFriendsService(q, nil)
+	svc := NewFriendsService(q, nil, nil)
 
 	f, err := svc.AcceptRequest(context.Background(), fid.String())
 	if err != nil {
@@ -188,7 +188,7 @@ func TestFriendsService_AcceptRequest(t *testing.T) {
 
 func TestFriendsService_AcceptRequest_NotFound(t *testing.T) {
 	q := &mockFriendsQueries{friendErr: sql.ErrNoRows}
-	svc := NewFriendsService(q, nil)
+	svc := NewFriendsService(q, nil, nil)
 
 	_, err := svc.AcceptRequest(context.Background(), uuid.New().String())
 	if err == nil {
@@ -198,7 +198,7 @@ func TestFriendsService_AcceptRequest_NotFound(t *testing.T) {
 
 func TestFriendsService_RejectRequest(t *testing.T) {
 	q := &mockFriendsQueries{}
-	svc := NewFriendsService(q, nil)
+	svc := NewFriendsService(q, nil, nil)
 
 	err := svc.RejectRequest(context.Background(), uuid.New().String())
 	if err != nil {
@@ -213,7 +213,7 @@ func TestFriendsService_ListFriends(t *testing.T) {
 			{ID: uuid.New(), UserID: uid, FriendID: uuid.New(), Status: "accepted"},
 		},
 	}
-	svc := NewFriendsService(q, nil)
+	svc := NewFriendsService(q, nil, nil)
 
 	friends, err := svc.ListFriends(context.Background(), uid.String())
 	if err != nil {
