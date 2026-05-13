@@ -119,6 +119,36 @@ func (m *platformMockQueries) CreateScore(_ context.Context, _ db.CreateScorePar
 func (m *platformMockQueries) GetLeaderboardConfig(_ context.Context, _ string) (db.LeaderboardConfig, error) {
 	return db.LeaderboardConfig{}, sql.ErrNoRows
 }
+func (m *platformMockQueries) CreateAdminUser(_ context.Context, _ db.CreateAdminUserParams) (db.AdminUser, error) {
+	return db.AdminUser{}, nil
+}
+func (m *platformMockQueries) CreateAuditLog(_ context.Context, _ db.CreateAuditLogParams) (db.AuditLog, error) {
+	return db.AuditLog{}, nil
+}
+func (m *platformMockQueries) GetAdminByUsername(_ context.Context, _ string) (db.AdminUser, error) {
+	return db.AdminUser{}, sql.ErrNoRows
+}
+func (m *platformMockQueries) ListAuditLogs(_ context.Context, _ db.ListAuditLogsParams) ([]db.AuditLog, error) {
+	return nil, nil
+}
+func (m *platformMockQueries) CreateFriendship(_ context.Context, _ db.CreateFriendshipParams) (db.Friendship, error) {
+	return db.Friendship{}, nil
+}
+func (m *platformMockQueries) DeleteFriendship(_ context.Context, _ uuid.UUID) (db.Friendship, error) {
+	return db.Friendship{}, nil
+}
+func (m *platformMockQueries) GetFriendship(_ context.Context, _ uuid.UUID) (db.Friendship, error) {
+	return db.Friendship{}, sql.ErrNoRows
+}
+func (m *platformMockQueries) ListFriends(_ context.Context, _ uuid.UUID) ([]db.Friendship, error) {
+	return nil, nil
+}
+func (m *platformMockQueries) ListPendingRequests(_ context.Context, _ uuid.UUID) ([]db.Friendship, error) {
+	return nil, nil
+}
+func (m *platformMockQueries) UpdateFriendshipStatus(_ context.Context, _ db.UpdateFriendshipStatusParams) (db.Friendship, error) {
+	return db.Friendship{}, nil
+}
 
 func newTestPlatformService() *PlatformService {
 	reg := NewPlatformRegistry()

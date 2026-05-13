@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/cyandie/backend/internal/admin"
 	"github.com/cyandie/backend/internal/auth"
 	"github.com/cyandie/backend/internal/core"
 	"github.com/cyandie/backend/internal/core/cache"
@@ -17,6 +18,7 @@ import (
 	"github.com/cyandie/backend/internal/core/middleware"
 	"github.com/cyandie/backend/internal/core/server"
 	"github.com/cyandie/backend/internal/db"
+	"github.com/cyandie/backend/internal/friends"
 	"github.com/cyandie/backend/internal/leaderboard"
 	"github.com/cyandie/backend/internal/chat"
 	"github.com/cyandie/backend/internal/platforms"
@@ -119,6 +121,12 @@ func main() {
 	leaderboardModule := leaderboard.NewModule(queries, rdb.Client)
 	app.Register(leaderboardModule)
 
+	adminModule := admin.NewModule(queries)
+	app.Register(adminModule)
+
+	friendsModule := friends.NewModule(queries, rdb.Client)
+	app.Register(friendsModule)
+
 	healthHandler := health.NewHandler()
 	healthHandler.RegisterRoutes(router)
 
@@ -151,6 +159,15 @@ func main() {
 	})
 	usersRouter := router.With(readLimiter.Middleware("read"))
 	usersModule.RegisterRoutes(usersRouter)
+
+	// Admin routes
+	adminModule.RegisterRoutes(router)
+
+	// Friends routes with auth guard
+	router.Route("/api/v1/friends", func(r chi.Router) {
+		r.Use(readLimiter.Middleware("read"))
+		friendsModule.RegisterRoutes(r)
+	})
 
 	log.Info("starting server", "addr", cfg.Server.HTTPAddr)
 

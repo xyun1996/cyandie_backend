@@ -150,3 +150,33 @@ func (m *mockQueries) GetPlatformBindingsByUserID(_ context.Context, _ uuid.UUID
 func (m *mockQueries) ListLeaderboardConfigs(_ context.Context) ([]db.LeaderboardConfig, error) {
 	return nil, nil
 }
+func (m *mockQueries) CreateAdminUser(_ context.Context, _ db.CreateAdminUserParams) (db.AdminUser, error) {
+	return db.AdminUser{}, nil
+}
+func (m *mockQueries) CreateAuditLog(_ context.Context, _ db.CreateAuditLogParams) (db.AuditLog, error) {
+	return db.AuditLog{}, nil
+}
+func (m *mockQueries) GetAdminByUsername(_ context.Context, _ string) (db.AdminUser, error) {
+	return db.AdminUser{}, sql.ErrNoRows
+}
+func (m *mockQueries) ListAuditLogs(_ context.Context, _ db.ListAuditLogsParams) ([]db.AuditLog, error) {
+	return nil, nil
+}
+func (m *mockQueries) CreateFriendship(_ context.Context, _ db.CreateFriendshipParams) (db.Friendship, error) {
+	return db.Friendship{}, nil
+}
+func (m *mockQueries) DeleteFriendship(_ context.Context, _ uuid.UUID) (db.Friendship, error) {
+	return db.Friendship{}, nil
+}
+func (m *mockQueries) GetFriendship(_ context.Context, _ uuid.UUID) (db.Friendship, error) {
+	return db.Friendship{}, sql.ErrNoRows
+}
+func (m *mockQueries) ListFriends(_ context.Context, _ uuid.UUID) ([]db.Friendship, error) {
+	return nil, nil
+}
+func (m *mockQueries) ListPendingRequests(_ context.Context, _ uuid.UUID) ([]db.Friendship, error) {
+	return nil, nil
+}
+func (m *mockQueries) UpdateFriendshipStatus(_ context.Context, _ db.UpdateFriendshipStatusParams) (db.Friendship, error) {
+	return db.Friendship{}, nil
+}

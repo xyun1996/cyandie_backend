@@ -115,6 +115,36 @@ func (m *mockLBQueries) GetRoomMembers(_ context.Context, _ uuid.UUID) ([]db.Cha
 func (m *mockLBQueries) RemoveRoomMember(_ context.Context, _ db.RemoveRoomMemberParams) (db.ChatRoomMember, error) {
 	return db.ChatRoomMember{}, nil
 }
+func (m *mockLBQueries) CreateAdminUser(_ context.Context, _ db.CreateAdminUserParams) (db.AdminUser, error) {
+	return db.AdminUser{}, nil
+}
+func (m *mockLBQueries) CreateAuditLog(_ context.Context, _ db.CreateAuditLogParams) (db.AuditLog, error) {
+	return db.AuditLog{}, nil
+}
+func (m *mockLBQueries) GetAdminByUsername(_ context.Context, _ string) (db.AdminUser, error) {
+	return db.AdminUser{}, sql.ErrNoRows
+}
+func (m *mockLBQueries) ListAuditLogs(_ context.Context, _ db.ListAuditLogsParams) ([]db.AuditLog, error) {
+	return nil, nil
+}
+func (m *mockLBQueries) CreateFriendship(_ context.Context, _ db.CreateFriendshipParams) (db.Friendship, error) {
+	return db.Friendship{}, nil
+}
+func (m *mockLBQueries) DeleteFriendship(_ context.Context, _ uuid.UUID) (db.Friendship, error) {
+	return db.Friendship{}, nil
+}
+func (m *mockLBQueries) GetFriendship(_ context.Context, _ uuid.UUID) (db.Friendship, error) {
+	return db.Friendship{}, sql.ErrNoRows
+}
+func (m *mockLBQueries) ListFriends(_ context.Context, _ uuid.UUID) ([]db.Friendship, error) {
+	return nil, nil
+}
+func (m *mockLBQueries) ListPendingRequests(_ context.Context, _ uuid.UUID) ([]db.Friendship, error) {
+	return nil, nil
+}
+func (m *mockLBQueries) UpdateFriendshipStatus(_ context.Context, _ db.UpdateFriendshipStatusParams) (db.Friendship, error) {
+	return db.Friendship{}, nil
+}
 
 func newTestLBService() *LeaderboardService {
 	q := &mockLBQueries{config: db.LeaderboardConfig{
