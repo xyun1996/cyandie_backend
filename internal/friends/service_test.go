@@ -126,6 +126,21 @@ func (m *mockFriendsQueries) GetAdminByUsername(_ context.Context, _ string) (db
 func (m *mockFriendsQueries) ListAuditLogs(_ context.Context, _ db.ListAuditLogsParams) ([]db.AuditLog, error) {
 	return nil, nil
 }
+func (m *mockFriendsQueries) CreateBlockRelation(_ context.Context, _ db.CreateBlockRelationParams) (db.BlockRelation, error) {
+	return db.BlockRelation{}, nil
+}
+func (m *mockFriendsQueries) DeleteBlockRelation(_ context.Context, _ db.DeleteBlockRelationParams) (db.BlockRelation, error) {
+	return db.BlockRelation{}, nil
+}
+func (m *mockFriendsQueries) ListBlockedUsers(_ context.Context, _ uuid.UUID) ([]db.BlockRelation, error) {
+	return nil, nil
+}
+func (m *mockFriendsQueries) IsBlockedBy(_ context.Context, _ db.IsBlockedByParams) (uuid.UUID, error) {
+	return uuid.UUID{}, sql.ErrNoRows
+}
+func (m *mockFriendsQueries) DeleteFriendshipByUsers(_ context.Context, _ db.DeleteFriendshipByUsersParams) (db.Friendship, error) {
+	return db.Friendship{}, nil
+}
 
 func TestFriendsService_SendRequest(t *testing.T) {
 	from := uuid.New()

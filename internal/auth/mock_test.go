@@ -180,3 +180,18 @@ func (m *mockQueries) ListPendingRequests(_ context.Context, _ uuid.UUID) ([]db.
 func (m *mockQueries) UpdateFriendshipStatus(_ context.Context, _ db.UpdateFriendshipStatusParams) (db.Friendship, error) {
 	return db.Friendship{}, nil
 }
+func (m *mockQueries) CreateBlockRelation(_ context.Context, _ db.CreateBlockRelationParams) (db.BlockRelation, error) {
+	return db.BlockRelation{}, nil
+}
+func (m *mockQueries) DeleteBlockRelation(_ context.Context, _ db.DeleteBlockRelationParams) (db.BlockRelation, error) {
+	return db.BlockRelation{}, nil
+}
+func (m *mockQueries) ListBlockedUsers(_ context.Context, _ uuid.UUID) ([]db.BlockRelation, error) {
+	return nil, nil
+}
+func (m *mockQueries) IsBlockedBy(_ context.Context, _ db.IsBlockedByParams) (uuid.UUID, error) {
+	return uuid.UUID{}, sql.ErrNoRows
+}
+func (m *mockQueries) DeleteFriendshipByUsers(_ context.Context, _ db.DeleteFriendshipByUsersParams) (db.Friendship, error) {
+	return db.Friendship{}, nil
+}

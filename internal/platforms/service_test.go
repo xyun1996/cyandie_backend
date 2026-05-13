@@ -149,6 +149,21 @@ func (m *platformMockQueries) ListPendingRequests(_ context.Context, _ uuid.UUID
 func (m *platformMockQueries) UpdateFriendshipStatus(_ context.Context, _ db.UpdateFriendshipStatusParams) (db.Friendship, error) {
 	return db.Friendship{}, nil
 }
+func (m *platformMockQueries) CreateBlockRelation(_ context.Context, _ db.CreateBlockRelationParams) (db.BlockRelation, error) {
+	return db.BlockRelation{}, nil
+}
+func (m *platformMockQueries) DeleteBlockRelation(_ context.Context, _ db.DeleteBlockRelationParams) (db.BlockRelation, error) {
+	return db.BlockRelation{}, nil
+}
+func (m *platformMockQueries) ListBlockedUsers(_ context.Context, _ uuid.UUID) ([]db.BlockRelation, error) {
+	return nil, nil
+}
+func (m *platformMockQueries) IsBlockedBy(_ context.Context, _ db.IsBlockedByParams) (uuid.UUID, error) {
+	return uuid.UUID{}, sql.ErrNoRows
+}
+func (m *platformMockQueries) DeleteFriendshipByUsers(_ context.Context, _ db.DeleteFriendshipByUsersParams) (db.Friendship, error) {
+	return db.Friendship{}, nil
+}
 
 func newTestPlatformService() *PlatformService {
 	reg := NewPlatformRegistry()

@@ -128,6 +128,21 @@ func (m *mockAdminQueries) ListPendingRequests(_ context.Context, _ uuid.UUID) (
 func (m *mockAdminQueries) UpdateFriendshipStatus(_ context.Context, _ db.UpdateFriendshipStatusParams) (db.Friendship, error) {
 	return db.Friendship{}, nil
 }
+func (m *mockAdminQueries) CreateBlockRelation(_ context.Context, _ db.CreateBlockRelationParams) (db.BlockRelation, error) {
+	return db.BlockRelation{}, nil
+}
+func (m *mockAdminQueries) DeleteBlockRelation(_ context.Context, _ db.DeleteBlockRelationParams) (db.BlockRelation, error) {
+	return db.BlockRelation{}, nil
+}
+func (m *mockAdminQueries) ListBlockedUsers(_ context.Context, _ uuid.UUID) ([]db.BlockRelation, error) {
+	return nil, nil
+}
+func (m *mockAdminQueries) IsBlockedBy(_ context.Context, _ db.IsBlockedByParams) (uuid.UUID, error) {
+	return uuid.UUID{}, sql.ErrNoRows
+}
+func (m *mockAdminQueries) DeleteFriendshipByUsers(_ context.Context, _ db.DeleteFriendshipByUsersParams) (db.Friendship, error) {
+	return db.Friendship{}, nil
+}
 
 func TestAdminService_Login_Success(t *testing.T) {
 	hash, _ := bcrypt.GenerateFromPassword([]byte("pass123"), bcrypt.DefaultCost)

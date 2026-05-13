@@ -145,6 +145,21 @@ func (m *mockLBQueries) ListPendingRequests(_ context.Context, _ uuid.UUID) ([]d
 func (m *mockLBQueries) UpdateFriendshipStatus(_ context.Context, _ db.UpdateFriendshipStatusParams) (db.Friendship, error) {
 	return db.Friendship{}, nil
 }
+func (m *mockLBQueries) CreateBlockRelation(_ context.Context, _ db.CreateBlockRelationParams) (db.BlockRelation, error) {
+	return db.BlockRelation{}, nil
+}
+func (m *mockLBQueries) DeleteBlockRelation(_ context.Context, _ db.DeleteBlockRelationParams) (db.BlockRelation, error) {
+	return db.BlockRelation{}, nil
+}
+func (m *mockLBQueries) ListBlockedUsers(_ context.Context, _ uuid.UUID) ([]db.BlockRelation, error) {
+	return nil, nil
+}
+func (m *mockLBQueries) IsBlockedBy(_ context.Context, _ db.IsBlockedByParams) (uuid.UUID, error) {
+	return uuid.UUID{}, sql.ErrNoRows
+}
+func (m *mockLBQueries) DeleteFriendshipByUsers(_ context.Context, _ db.DeleteFriendshipByUsersParams) (db.Friendship, error) {
+	return db.Friendship{}, nil
+}
 
 func newTestLBService() *LeaderboardService {
 	q := &mockLBQueries{config: db.LeaderboardConfig{
