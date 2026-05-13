@@ -17,6 +17,16 @@ type mockFriendsQueries struct {
 	friendships      []db.Friendship
 	friendsErr       error
 	deleteErr        error
+
+	// Block-related mock fields
+	blockRelation    db.BlockRelation
+	blockErr         error
+	blockedList      []db.BlockRelation
+	blockedListErr   error
+	isBlockedID      uuid.UUID
+	isBlockedErr     error
+	deleteByUsers    db.Friendship
+	deleteByUsersErr error
 }
 
 func (m *mockFriendsQueries) CreateFriendship(_ context.Context, _ db.CreateFriendshipParams) (db.Friendship, error) {
@@ -127,19 +137,19 @@ func (m *mockFriendsQueries) ListAuditLogs(_ context.Context, _ db.ListAuditLogs
 	return nil, nil
 }
 func (m *mockFriendsQueries) CreateBlockRelation(_ context.Context, _ db.CreateBlockRelationParams) (db.BlockRelation, error) {
-	return db.BlockRelation{}, nil
+	return m.blockRelation, m.blockErr
 }
 func (m *mockFriendsQueries) DeleteBlockRelation(_ context.Context, _ db.DeleteBlockRelationParams) (db.BlockRelation, error) {
-	return db.BlockRelation{}, nil
+	return m.blockRelation, m.blockErr
 }
 func (m *mockFriendsQueries) ListBlockedUsers(_ context.Context, _ uuid.UUID) ([]db.BlockRelation, error) {
-	return nil, nil
+	return m.blockedList, m.blockedListErr
 }
 func (m *mockFriendsQueries) IsBlockedBy(_ context.Context, _ db.IsBlockedByParams) (uuid.UUID, error) {
-	return uuid.UUID{}, sql.ErrNoRows
+	return m.isBlockedID, m.isBlockedErr
 }
 func (m *mockFriendsQueries) DeleteFriendshipByUsers(_ context.Context, _ db.DeleteFriendshipByUsersParams) (db.Friendship, error) {
-	return db.Friendship{}, nil
+	return m.deleteByUsers, m.deleteByUsersErr
 }
 
 func TestFriendsService_SendRequest(t *testing.T) {
@@ -147,6 +157,7 @@ func TestFriendsService_SendRequest(t *testing.T) {
 	to := uuid.New()
 	q := &mockFriendsQueries{
 		friendErr:        sql.ErrNoRows,
+		isBlockedErr:     sql.ErrNoRows,
 		createFriendship: db.Friendship{ID: uuid.New(), UserID: from, FriendID: to, Status: "pending"},
 	}
 	svc := NewFriendsService(q, nil, nil)
@@ -161,7 +172,7 @@ func TestFriendsService_SendRequest(t *testing.T) {
 }
 
 func TestFriendsService_SendRequest_Self(t *testing.T) {
-	svc := NewFriendsService(&mockFriendsQueries{}, nil)
+	svc := NewFriendsService(&mockFriendsQueries{}, nil, nil)
 	uid := uuid.New().String()
 
 	_, err := svc.SendRequest(context.Background(), uid, uid)
@@ -221,5 +232,93 @@ func TestFriendsService_ListFriends(t *testing.T) {
 	}
 	if len(friends) != 1 {
 		t.Errorf("expected 1 friend, got %d", len(friends))
+	}
+}
+
+func TestFriendsService_Block(t *testing.T) {
+	blocker := uuid.New()
+	blocked := uuid.New()
+	q := &mockFriendsQueries{
+		blockRelation: db.BlockRelation{BlockerID: blocker, BlockedID: blocked},
+		friendErr:     sql.ErrNoRows,
+		isBlockedErr:  sql.ErrNoRows,
+	}
+	svc := NewFriendsService(q, nil, nil)
+
+	err := svc.Block(context.Background(), blocker.String(), blocked.String(), "spam")
+	if err != nil {
+		t.Fatalf("Block failed: %v", err)
+	}
+}
+
+func TestFriendsService_Block_Self(t *testing.T) {
+	svc := NewFriendsService(&mockFriendsQueries{}, nil, nil)
+	uid := uuid.New().String()
+
+	err := svc.Block(context.Background(), uid, uid, "")
+	if err == nil {
+		t.Error("expected error for self-block")
+	}
+}
+
+func TestFriendsService_Unblock(t *testing.T) {
+	blocker := uuid.New()
+	blocked := uuid.New()
+	q := &mockFriendsQueries{
+		blockRelation: db.BlockRelation{BlockerID: blocker, BlockedID: blocked},
+	}
+	svc := NewFriendsService(q, nil, nil)
+
+	err := svc.Unblock(context.Background(), blocker.String(), blocked.String())
+	if err != nil {
+		t.Fatalf("Unblock failed: %v", err)
+	}
+}
+
+func TestFriendsService_IsBlocked(t *testing.T) {
+	target := uuid.New()
+	by := uuid.New()
+	q := &mockFriendsQueries{
+		isBlockedID: uuid.New(),
+	}
+	svc := NewFriendsService(q, nil, nil)
+
+	blocked, err := svc.IsBlocked(context.Background(), target.String(), by.String())
+	if err != nil {
+		t.Fatalf("IsBlocked failed: %v", err)
+	}
+	if !blocked {
+		t.Error("expected blocked=true")
+	}
+}
+
+func TestFriendsService_IsBlocked_NotBlocked(t *testing.T) {
+	target := uuid.New()
+	by := uuid.New()
+	q := &mockFriendsQueries{
+		isBlockedErr: sql.ErrNoRows,
+	}
+	svc := NewFriendsService(q, nil, nil)
+
+	blocked, err := svc.IsBlocked(context.Background(), target.String(), by.String())
+	if err != nil {
+		t.Fatalf("IsBlocked failed: %v", err)
+	}
+	if blocked {
+		t.Error("expected blocked=false")
+	}
+}
+
+func TestFriendsService_RemoveFriend(t *testing.T) {
+	user := uuid.New()
+	friend := uuid.New()
+	q := &mockFriendsQueries{
+		deleteByUsers: db.Friendship{UserID: user, FriendID: friend},
+	}
+	svc := NewFriendsService(q, nil, nil)
+
+	err := svc.RemoveFriend(context.Background(), user.String(), friend.String())
+	if err != nil {
+		t.Fatalf("RemoveFriend failed: %v", err)
 	}
 }
