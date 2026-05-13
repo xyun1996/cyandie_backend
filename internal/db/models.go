@@ -12,6 +12,29 @@ import (
 	"github.com/sqlc-dev/pqtype"
 )
 
+type AdminUser struct {
+	ID           uuid.UUID `json:"id"`
+	Username     string    `json:"username"`
+	PasswordHash string    `json:"password_hash"`
+	Role         string    `json:"role"`
+	Status       string    `json:"status"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+}
+
+type AuditLog struct {
+	ID          uuid.UUID             `json:"id"`
+	OperatorID  uuid.NullUUID         `json:"operator_id"`
+	Action      string                `json:"action"`
+	TargetType  string                `json:"target_type"`
+	TargetID    string                `json:"target_id"`
+	BeforeValue pqtype.NullRawMessage `json:"before_value"`
+	AfterValue  pqtype.NullRawMessage `json:"after_value"`
+	Reason      sql.NullString        `json:"reason"`
+	Ip          sql.NullString        `json:"ip"`
+	CreatedAt   time.Time             `json:"created_at"`
+}
+
 type ChatMessage struct {
 	ID        uuid.UUID `json:"id"`
 	RoomID    uuid.UUID `json:"room_id"`
@@ -45,6 +68,15 @@ type Credential struct {
 	SecretHash sql.NullString `json:"secret_hash"`
 	Verified   bool           `json:"verified"`
 	CreatedAt  time.Time      `json:"created_at"`
+}
+
+type Friendship struct {
+	ID        uuid.UUID `json:"id"`
+	UserID    uuid.UUID `json:"user_id"`
+	FriendID  uuid.UUID `json:"friend_id"`
+	Status    string    `json:"status"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type LeaderboardConfig struct {
