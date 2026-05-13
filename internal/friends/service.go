@@ -49,6 +49,14 @@ func (s *FriendsService) SendRequest(ctx context.Context, fromUserID, toUserID s
 		return nil, errors.New(errors.ErrBadRequest, "cannot send friend request to yourself")
 	}
 
+	blocked, err := s.IsBlocked(ctx, toUserID, fromUserID)
+	if err != nil {
+		return nil, err
+	}
+	if blocked {
+		return nil, errors.New(errors.ErrForbidden, "you are blocked by this user")
+	}
+
 	existing, err := s.queries.GetFriendship(ctx, from)
 	if err == nil {
 		_ = existing
@@ -289,4 +297,66 @@ func (s *FriendsService) ListBlockedUsers(ctx context.Context, userID string) ([
 		return nil, errors.New(errors.ErrBadRequest, "invalid user id")
 	}
 	return s.queries.ListBlockedUsers(ctx, uid)
+}
+
+// RemoveFriend deletes the friendship between two users and notifies the other party.
+func (s *FriendsService) RemoveFriend(ctx context.Context, userID, friendID string) error {
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		return errors.New(errors.ErrBadRequest, "invalid user id")
+	}
+	fid, err := uuid.Parse(friendID)
+	if err != nil {
+		return errors.New(errors.ErrBadRequest, "invalid friend id")
+	}
+
+	_, err = s.queries.DeleteFriendshipByUsers(ctx, db.DeleteFriendshipByUsersParams{
+		UserID:   uid,
+		FriendID: fid,
+	})
+	if err != nil {
+		return errors.New(errors.ErrInternal, "failed to delete friendship")
+	}
+
+	if s.notifier != nil {
+		s.notifier.NotifyFriendRemoved(ctx, friendID, userID)
+	}
+
+	return nil
+}
+
+// ListRecentContacts returns recent contacts sorted by last interaction time.
+func (s *FriendsService) ListRecentContacts(ctx context.Context, userID string, limit int) ([]string, error) {
+	if s.rdb == nil {
+		return nil, errors.New(errors.ErrInternal, "redis not available")
+	}
+
+	key := fmt.Sprintf("friends:recent:%s", userID)
+	now := float64(time.Now().Unix())
+
+	// Remove entries older than 30 days
+	cutoff := now - 30*24*3600
+	s.rdb.ZRemRangeByScore(ctx, key, "-inf", fmt.Sprintf("%f", cutoff))
+
+	results, err := s.rdb.ZRevRangeByScore(ctx, key, &redis.ZRangeBy{
+		Max:   fmt.Sprintf("%f", now),
+		Min:   "0",
+		Count: int64(limit),
+	}).Result()
+	if err != nil {
+		return nil, errors.New(errors.ErrInternal, "failed to get recent contacts")
+	}
+
+	return results, nil
+}
+
+// PlatformFriendInfo represents a friend from an external platform.
+type PlatformFriendInfo struct {
+	PlatformUserID string
+	Username       string
+}
+
+// ImportPlatformFriends is a stub for future platform friend import.
+func (s *FriendsService) ImportPlatformFriends(_ context.Context, _, _ string, _ []PlatformFriendInfo) error {
+	return errors.New(errors.ErrNotImplemented, "platform friend import is not yet available")
 }
