@@ -15,8 +15,14 @@ type Module struct {
 	service *FriendsService
 }
 
-func NewModule(queries db.Querier, rdb *redis.Client) *Module {
-	service := NewFriendsService(queries, rdb, nil)
+// BlockChecker checks if a user is blocked by another.
+// Defined locally to avoid circular import with chat package.
+type BlockChecker interface {
+	IsBlocked(ctx context.Context, targetUserID, byUserID string) (bool, error)
+}
+
+func NewModule(queries db.Querier, rdb *redis.Client, notifier PresenceNotifier) *Module {
+	service := NewFriendsService(queries, rdb, notifier)
 	handler := NewFriendsHandler(service)
 	return &Module{handler: handler, service: service}
 }
@@ -30,6 +36,9 @@ func (m *Module) RegisterServices(reg *core.ServiceRegistry) {
 func (m *Module) RegisterRoutes(router chi.Router) {
 	router.Mount("/api/v1/friends", m.handler.Routes())
 }
+
+// BlockChecker returns the service as a BlockChecker for the chat module.
+func (m *Module) BlockChecker() BlockChecker { return m.service }
 
 func (m *Module) OnStart(_ context.Context) error { return nil }
 func (m *Module) OnStop(_ context.Context) error  { return nil }
