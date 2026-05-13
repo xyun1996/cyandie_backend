@@ -16,6 +16,12 @@ enum MessageType {
   SEND_MSG = 272;
   RECV_MSG = 273;
   MSG_REJECTED = 274;
+  PRESENCE_ONLINE  = 320;
+  PRESENCE_OFFLINE = 321;
+  FRIEND_REMOVED   = 322;
+  BLOCK_NOTIFY     = 323;
+  INVITE_ROOM      = 336;
+  INVITE_ROOM_ACK  = 337;
   ERROR = 65535;
 }
 
@@ -30,6 +36,14 @@ message LeaveRoomResponse { string room_id = 1; }
 message SendMessageRequest { string room_id = 1; string content = 2; string type = 3; }
 message ReceiveMessage { string room_id = 1; string sender_id = 2; string content = 3; string type = 4; int64 timestamp = 5; string message_id = 6; }
 message ErrorMessage { string code = 1; string message = 2; }
+message PresenceOnline { string user_id = 1; string username = 2; string status = 3; }
+message PresenceOffline { string user_id = 1; }
+message FriendRemoved { string user_id = 1; }
+message BlockNotify { string blocker_id = 1; }
+message InviteRoomRequest { string room_id = 1; string target_user_id = 2; }
+message InviteRoomNotify { string room_id = 1; string inviter_id = 2; string inviter_username = 3; }
+message InviteRoomAccept { string room_id = 1; }
+message InviteRoomReject { string room_id = 1; }
 
 message ChatEnvelope {
   MessageType type = 1;
@@ -46,5 +60,13 @@ message ChatEnvelope {
     SendMessageRequest send_message_request = 30;
     ReceiveMessage receive_message = 31;
     ErrorMessage error = 50;
+    PresenceOnline presence_online = 40;
+    PresenceOffline presence_offline = 41;
+    FriendRemoved friend_removed = 42;
+    BlockNotify block_notify = 43;
+    InviteRoomRequest invite_room_request = 60;
+    InviteRoomNotify invite_room_notify = 61;
+    InviteRoomAccept invite_room_accept = 62;
+    InviteRoomReject invite_room_reject = 63;
   }
 }

@@ -37,6 +37,12 @@ const (
 	MessageType_SEND_MSG                 MessageType = 272
 	MessageType_RECV_MSG                 MessageType = 273
 	MessageType_MSG_REJECTED             MessageType = 274
+	MessageType_PRESENCE_ONLINE          MessageType = 320
+	MessageType_PRESENCE_OFFLINE         MessageType = 321
+	MessageType_FRIEND_REMOVED           MessageType = 322
+	MessageType_BLOCK_NOTIFY             MessageType = 323
+	MessageType_INVITE_ROOM              MessageType = 336
+	MessageType_INVITE_ROOM_ACK          MessageType = 337
 	MessageType_ERROR                    MessageType = 65535
 )
 
@@ -56,6 +62,12 @@ var (
 		272:   "SEND_MSG",
 		273:   "RECV_MSG",
 		274:   "MSG_REJECTED",
+		320:   "PRESENCE_ONLINE",
+		321:   "PRESENCE_OFFLINE",
+		322:   "FRIEND_REMOVED",
+		323:   "BLOCK_NOTIFY",
+		336:   "INVITE_ROOM",
+		337:   "INVITE_ROOM_ACK",
 		65535: "ERROR",
 	}
 	MessageType_value = map[string]int32{
@@ -72,6 +84,12 @@ var (
 		"SEND_MSG":                 272,
 		"RECV_MSG":                 273,
 		"MSG_REJECTED":             274,
+		"PRESENCE_ONLINE":          320,
+		"PRESENCE_OFFLINE":         321,
+		"FRIEND_REMOVED":           322,
+		"BLOCK_NOTIFY":             323,
+		"INVITE_ROOM":              336,
+		"INVITE_ROOM_ACK":          337,
 		"ERROR":                    65535,
 	}
 )
@@ -643,6 +661,398 @@ func (x *ErrorMessage) GetMessage() string {
 	return ""
 }
 
+type PresenceOnline struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Username      string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
+	Status        string                 `protobuf:"bytes,3,opt,name=status,proto3" json:"status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PresenceOnline) Reset() {
+	*x = PresenceOnline{}
+	mi := &file_chat_v1_chat_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PresenceOnline) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PresenceOnline) ProtoMessage() {}
+
+func (x *PresenceOnline) ProtoReflect() protoreflect.Message {
+	mi := &file_chat_v1_chat_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PresenceOnline.ProtoReflect.Descriptor instead.
+func (*PresenceOnline) Descriptor() ([]byte, []int) {
+	return file_chat_v1_chat_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *PresenceOnline) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *PresenceOnline) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+func (x *PresenceOnline) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+type PresenceOffline struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PresenceOffline) Reset() {
+	*x = PresenceOffline{}
+	mi := &file_chat_v1_chat_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PresenceOffline) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PresenceOffline) ProtoMessage() {}
+
+func (x *PresenceOffline) ProtoReflect() protoreflect.Message {
+	mi := &file_chat_v1_chat_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PresenceOffline.ProtoReflect.Descriptor instead.
+func (*PresenceOffline) Descriptor() ([]byte, []int) {
+	return file_chat_v1_chat_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *PresenceOffline) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type FriendRemoved struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FriendRemoved) Reset() {
+	*x = FriendRemoved{}
+	mi := &file_chat_v1_chat_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FriendRemoved) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FriendRemoved) ProtoMessage() {}
+
+func (x *FriendRemoved) ProtoReflect() protoreflect.Message {
+	mi := &file_chat_v1_chat_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FriendRemoved.ProtoReflect.Descriptor instead.
+func (*FriendRemoved) Descriptor() ([]byte, []int) {
+	return file_chat_v1_chat_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *FriendRemoved) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type BlockNotify struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	BlockerId     string                 `protobuf:"bytes,1,opt,name=blocker_id,json=blockerId,proto3" json:"blocker_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BlockNotify) Reset() {
+	*x = BlockNotify{}
+	mi := &file_chat_v1_chat_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BlockNotify) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BlockNotify) ProtoMessage() {}
+
+func (x *BlockNotify) ProtoReflect() protoreflect.Message {
+	mi := &file_chat_v1_chat_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BlockNotify.ProtoReflect.Descriptor instead.
+func (*BlockNotify) Descriptor() ([]byte, []int) {
+	return file_chat_v1_chat_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *BlockNotify) GetBlockerId() string {
+	if x != nil {
+		return x.BlockerId
+	}
+	return ""
+}
+
+type InviteRoomRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RoomId        string                 `protobuf:"bytes,1,opt,name=room_id,json=roomId,proto3" json:"room_id,omitempty"`
+	TargetUserId  string                 `protobuf:"bytes,2,opt,name=target_user_id,json=targetUserId,proto3" json:"target_user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InviteRoomRequest) Reset() {
+	*x = InviteRoomRequest{}
+	mi := &file_chat_v1_chat_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InviteRoomRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InviteRoomRequest) ProtoMessage() {}
+
+func (x *InviteRoomRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_chat_v1_chat_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InviteRoomRequest.ProtoReflect.Descriptor instead.
+func (*InviteRoomRequest) Descriptor() ([]byte, []int) {
+	return file_chat_v1_chat_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *InviteRoomRequest) GetRoomId() string {
+	if x != nil {
+		return x.RoomId
+	}
+	return ""
+}
+
+func (x *InviteRoomRequest) GetTargetUserId() string {
+	if x != nil {
+		return x.TargetUserId
+	}
+	return ""
+}
+
+type InviteRoomNotify struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	RoomId          string                 `protobuf:"bytes,1,opt,name=room_id,json=roomId,proto3" json:"room_id,omitempty"`
+	InviterId       string                 `protobuf:"bytes,2,opt,name=inviter_id,json=inviterId,proto3" json:"inviter_id,omitempty"`
+	InviterUsername string                 `protobuf:"bytes,3,opt,name=inviter_username,json=inviterUsername,proto3" json:"inviter_username,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *InviteRoomNotify) Reset() {
+	*x = InviteRoomNotify{}
+	mi := &file_chat_v1_chat_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InviteRoomNotify) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InviteRoomNotify) ProtoMessage() {}
+
+func (x *InviteRoomNotify) ProtoReflect() protoreflect.Message {
+	mi := &file_chat_v1_chat_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InviteRoomNotify.ProtoReflect.Descriptor instead.
+func (*InviteRoomNotify) Descriptor() ([]byte, []int) {
+	return file_chat_v1_chat_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *InviteRoomNotify) GetRoomId() string {
+	if x != nil {
+		return x.RoomId
+	}
+	return ""
+}
+
+func (x *InviteRoomNotify) GetInviterId() string {
+	if x != nil {
+		return x.InviterId
+	}
+	return ""
+}
+
+func (x *InviteRoomNotify) GetInviterUsername() string {
+	if x != nil {
+		return x.InviterUsername
+	}
+	return ""
+}
+
+type InviteRoomAccept struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RoomId        string                 `protobuf:"bytes,1,opt,name=room_id,json=roomId,proto3" json:"room_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InviteRoomAccept) Reset() {
+	*x = InviteRoomAccept{}
+	mi := &file_chat_v1_chat_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InviteRoomAccept) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InviteRoomAccept) ProtoMessage() {}
+
+func (x *InviteRoomAccept) ProtoReflect() protoreflect.Message {
+	mi := &file_chat_v1_chat_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InviteRoomAccept.ProtoReflect.Descriptor instead.
+func (*InviteRoomAccept) Descriptor() ([]byte, []int) {
+	return file_chat_v1_chat_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *InviteRoomAccept) GetRoomId() string {
+	if x != nil {
+		return x.RoomId
+	}
+	return ""
+}
+
+type InviteRoomReject struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RoomId        string                 `protobuf:"bytes,1,opt,name=room_id,json=roomId,proto3" json:"room_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InviteRoomReject) Reset() {
+	*x = InviteRoomReject{}
+	mi := &file_chat_v1_chat_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InviteRoomReject) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InviteRoomReject) ProtoMessage() {}
+
+func (x *InviteRoomReject) ProtoReflect() protoreflect.Message {
+	mi := &file_chat_v1_chat_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InviteRoomReject.ProtoReflect.Descriptor instead.
+func (*InviteRoomReject) Descriptor() ([]byte, []int) {
+	return file_chat_v1_chat_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *InviteRoomReject) GetRoomId() string {
+	if x != nil {
+		return x.RoomId
+	}
+	return ""
+}
+
 type ChatEnvelope struct {
 	state    protoimpl.MessageState `protogen:"open.v1"`
 	Type     MessageType            `protobuf:"varint,1,opt,name=type,proto3,enum=chat.v1.MessageType" json:"type,omitempty"`
@@ -660,6 +1070,14 @@ type ChatEnvelope struct {
 	//	*ChatEnvelope_SendMessageRequest
 	//	*ChatEnvelope_ReceiveMessage
 	//	*ChatEnvelope_Error
+	//	*ChatEnvelope_PresenceOnline
+	//	*ChatEnvelope_PresenceOffline
+	//	*ChatEnvelope_FriendRemoved
+	//	*ChatEnvelope_BlockNotify
+	//	*ChatEnvelope_InviteRoomRequest
+	//	*ChatEnvelope_InviteRoomNotify
+	//	*ChatEnvelope_InviteRoomAccept
+	//	*ChatEnvelope_InviteRoomReject
 	Payload       isChatEnvelope_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -667,7 +1085,7 @@ type ChatEnvelope struct {
 
 func (x *ChatEnvelope) Reset() {
 	*x = ChatEnvelope{}
-	mi := &file_chat_v1_chat_proto_msgTypes[11]
+	mi := &file_chat_v1_chat_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -679,7 +1097,7 @@ func (x *ChatEnvelope) String() string {
 func (*ChatEnvelope) ProtoMessage() {}
 
 func (x *ChatEnvelope) ProtoReflect() protoreflect.Message {
-	mi := &file_chat_v1_chat_proto_msgTypes[11]
+	mi := &file_chat_v1_chat_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -692,7 +1110,7 @@ func (x *ChatEnvelope) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChatEnvelope.ProtoReflect.Descriptor instead.
 func (*ChatEnvelope) Descriptor() ([]byte, []int) {
-	return file_chat_v1_chat_proto_rawDescGZIP(), []int{11}
+	return file_chat_v1_chat_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *ChatEnvelope) GetType() MessageType {
@@ -815,6 +1233,78 @@ func (x *ChatEnvelope) GetError() *ErrorMessage {
 	return nil
 }
 
+func (x *ChatEnvelope) GetPresenceOnline() *PresenceOnline {
+	if x != nil {
+		if x, ok := x.Payload.(*ChatEnvelope_PresenceOnline); ok {
+			return x.PresenceOnline
+		}
+	}
+	return nil
+}
+
+func (x *ChatEnvelope) GetPresenceOffline() *PresenceOffline {
+	if x != nil {
+		if x, ok := x.Payload.(*ChatEnvelope_PresenceOffline); ok {
+			return x.PresenceOffline
+		}
+	}
+	return nil
+}
+
+func (x *ChatEnvelope) GetFriendRemoved() *FriendRemoved {
+	if x != nil {
+		if x, ok := x.Payload.(*ChatEnvelope_FriendRemoved); ok {
+			return x.FriendRemoved
+		}
+	}
+	return nil
+}
+
+func (x *ChatEnvelope) GetBlockNotify() *BlockNotify {
+	if x != nil {
+		if x, ok := x.Payload.(*ChatEnvelope_BlockNotify); ok {
+			return x.BlockNotify
+		}
+	}
+	return nil
+}
+
+func (x *ChatEnvelope) GetInviteRoomRequest() *InviteRoomRequest {
+	if x != nil {
+		if x, ok := x.Payload.(*ChatEnvelope_InviteRoomRequest); ok {
+			return x.InviteRoomRequest
+		}
+	}
+	return nil
+}
+
+func (x *ChatEnvelope) GetInviteRoomNotify() *InviteRoomNotify {
+	if x != nil {
+		if x, ok := x.Payload.(*ChatEnvelope_InviteRoomNotify); ok {
+			return x.InviteRoomNotify
+		}
+	}
+	return nil
+}
+
+func (x *ChatEnvelope) GetInviteRoomAccept() *InviteRoomAccept {
+	if x != nil {
+		if x, ok := x.Payload.(*ChatEnvelope_InviteRoomAccept); ok {
+			return x.InviteRoomAccept
+		}
+	}
+	return nil
+}
+
+func (x *ChatEnvelope) GetInviteRoomReject() *InviteRoomReject {
+	if x != nil {
+		if x, ok := x.Payload.(*ChatEnvelope_InviteRoomReject); ok {
+			return x.InviteRoomReject
+		}
+	}
+	return nil
+}
+
 type isChatEnvelope_Payload interface {
 	isChatEnvelope_Payload()
 }
@@ -863,6 +1353,38 @@ type ChatEnvelope_Error struct {
 	Error *ErrorMessage `protobuf:"bytes,50,opt,name=error,proto3,oneof"`
 }
 
+type ChatEnvelope_PresenceOnline struct {
+	PresenceOnline *PresenceOnline `protobuf:"bytes,40,opt,name=presence_online,json=presenceOnline,proto3,oneof"`
+}
+
+type ChatEnvelope_PresenceOffline struct {
+	PresenceOffline *PresenceOffline `protobuf:"bytes,41,opt,name=presence_offline,json=presenceOffline,proto3,oneof"`
+}
+
+type ChatEnvelope_FriendRemoved struct {
+	FriendRemoved *FriendRemoved `protobuf:"bytes,42,opt,name=friend_removed,json=friendRemoved,proto3,oneof"`
+}
+
+type ChatEnvelope_BlockNotify struct {
+	BlockNotify *BlockNotify `protobuf:"bytes,43,opt,name=block_notify,json=blockNotify,proto3,oneof"`
+}
+
+type ChatEnvelope_InviteRoomRequest struct {
+	InviteRoomRequest *InviteRoomRequest `protobuf:"bytes,60,opt,name=invite_room_request,json=inviteRoomRequest,proto3,oneof"`
+}
+
+type ChatEnvelope_InviteRoomNotify struct {
+	InviteRoomNotify *InviteRoomNotify `protobuf:"bytes,61,opt,name=invite_room_notify,json=inviteRoomNotify,proto3,oneof"`
+}
+
+type ChatEnvelope_InviteRoomAccept struct {
+	InviteRoomAccept *InviteRoomAccept `protobuf:"bytes,62,opt,name=invite_room_accept,json=inviteRoomAccept,proto3,oneof"`
+}
+
+type ChatEnvelope_InviteRoomReject struct {
+	InviteRoomReject *InviteRoomReject `protobuf:"bytes,63,opt,name=invite_room_reject,json=inviteRoomReject,proto3,oneof"`
+}
+
 func (*ChatEnvelope_AuthRequest) isChatEnvelope_Payload() {}
 
 func (*ChatEnvelope_AuthResponse) isChatEnvelope_Payload() {}
@@ -884,6 +1406,22 @@ func (*ChatEnvelope_SendMessageRequest) isChatEnvelope_Payload() {}
 func (*ChatEnvelope_ReceiveMessage) isChatEnvelope_Payload() {}
 
 func (*ChatEnvelope_Error) isChatEnvelope_Payload() {}
+
+func (*ChatEnvelope_PresenceOnline) isChatEnvelope_Payload() {}
+
+func (*ChatEnvelope_PresenceOffline) isChatEnvelope_Payload() {}
+
+func (*ChatEnvelope_FriendRemoved) isChatEnvelope_Payload() {}
+
+func (*ChatEnvelope_BlockNotify) isChatEnvelope_Payload() {}
+
+func (*ChatEnvelope_InviteRoomRequest) isChatEnvelope_Payload() {}
+
+func (*ChatEnvelope_InviteRoomNotify) isChatEnvelope_Payload() {}
+
+func (*ChatEnvelope_InviteRoomAccept) isChatEnvelope_Payload() {}
+
+func (*ChatEnvelope_InviteRoomReject) isChatEnvelope_Payload() {}
 
 var File_chat_v1_chat_proto protoreflect.FileDescriptor
 
@@ -920,7 +1458,31 @@ const file_chat_v1_chat_proto_rawDesc = "" +
 	"message_id\x18\x06 \x01(\tR\tmessageId\"<\n" +
 	"\fErrorMessage\x12\x12\n" +
 	"\x04code\x18\x01 \x01(\tR\x04code\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\"\xba\x06\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\"]\n" +
+	"\x0ePresenceOnline\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1a\n" +
+	"\busername\x18\x02 \x01(\tR\busername\x12\x16\n" +
+	"\x06status\x18\x03 \x01(\tR\x06status\"*\n" +
+	"\x0fPresenceOffline\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"(\n" +
+	"\rFriendRemoved\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\",\n" +
+	"\vBlockNotify\x12\x1d\n" +
+	"\n" +
+	"blocker_id\x18\x01 \x01(\tR\tblockerId\"R\n" +
+	"\x11InviteRoomRequest\x12\x17\n" +
+	"\aroom_id\x18\x01 \x01(\tR\x06roomId\x12$\n" +
+	"\x0etarget_user_id\x18\x02 \x01(\tR\ftargetUserId\"u\n" +
+	"\x10InviteRoomNotify\x12\x17\n" +
+	"\aroom_id\x18\x01 \x01(\tR\x06roomId\x12\x1d\n" +
+	"\n" +
+	"inviter_id\x18\x02 \x01(\tR\tinviterId\x12)\n" +
+	"\x10inviter_username\x18\x03 \x01(\tR\x0finviterUsername\"+\n" +
+	"\x10InviteRoomAccept\x12\x17\n" +
+	"\aroom_id\x18\x01 \x01(\tR\x06roomId\"+\n" +
+	"\x10InviteRoomReject\x12\x17\n" +
+	"\aroom_id\x18\x01 \x01(\tR\x06roomId\"\xf0\n" +
+	"\n" +
 	"\fChatEnvelope\x12(\n" +
 	"\x04type\x18\x01 \x01(\x0e2\x14.chat.v1.MessageTypeR\x04type\x12\x1a\n" +
 	"\bsequence\x18\x02 \x01(\rR\bsequence\x129\n" +
@@ -935,8 +1497,16 @@ const file_chat_v1_chat_proto_rawDesc = "" +
 	"\x13leave_room_response\x18\x17 \x01(\v2\x1a.chat.v1.LeaveRoomResponseH\x00R\x11leaveRoomResponse\x12O\n" +
 	"\x14send_message_request\x18\x1e \x01(\v2\x1b.chat.v1.SendMessageRequestH\x00R\x12sendMessageRequest\x12B\n" +
 	"\x0freceive_message\x18\x1f \x01(\v2\x17.chat.v1.ReceiveMessageH\x00R\x0ereceiveMessage\x12-\n" +
-	"\x05error\x182 \x01(\v2\x15.chat.v1.ErrorMessageH\x00R\x05errorB\t\n" +
-	"\apayload*\xfd\x01\n" +
+	"\x05error\x182 \x01(\v2\x15.chat.v1.ErrorMessageH\x00R\x05error\x12B\n" +
+	"\x0fpresence_online\x18( \x01(\v2\x17.chat.v1.PresenceOnlineH\x00R\x0epresenceOnline\x12E\n" +
+	"\x10presence_offline\x18) \x01(\v2\x18.chat.v1.PresenceOfflineH\x00R\x0fpresenceOffline\x12?\n" +
+	"\x0efriend_removed\x18* \x01(\v2\x16.chat.v1.FriendRemovedH\x00R\rfriendRemoved\x129\n" +
+	"\fblock_notify\x18+ \x01(\v2\x14.chat.v1.BlockNotifyH\x00R\vblockNotify\x12L\n" +
+	"\x13invite_room_request\x18< \x01(\v2\x1a.chat.v1.InviteRoomRequestH\x00R\x11inviteRoomRequest\x12I\n" +
+	"\x12invite_room_notify\x18= \x01(\v2\x19.chat.v1.InviteRoomNotifyH\x00R\x10inviteRoomNotify\x12I\n" +
+	"\x12invite_room_accept\x18> \x01(\v2\x19.chat.v1.InviteRoomAcceptH\x00R\x10inviteRoomAccept\x12I\n" +
+	"\x12invite_room_reject\x18? \x01(\v2\x19.chat.v1.InviteRoomRejectH\x00R\x10inviteRoomRejectB\t\n" +
+	"\apayload*\xfa\x02\n" +
 	"\vMessageType\x12\x1c\n" +
 	"\x18MESSAGE_TYPE_UNSPECIFIED\x10\x00\x12\b\n" +
 	"\x04AUTH\x10\x01\x12\v\n" +
@@ -951,7 +1521,13 @@ const file_chat_v1_chat_proto_rawDesc = "" +
 	"\rLEAVE_ROOM_OK\x10\x83\x02\x12\r\n" +
 	"\bSEND_MSG\x10\x90\x02\x12\r\n" +
 	"\bRECV_MSG\x10\x91\x02\x12\x11\n" +
-	"\fMSG_REJECTED\x10\x92\x02\x12\v\n" +
+	"\fMSG_REJECTED\x10\x92\x02\x12\x14\n" +
+	"\x0fPRESENCE_ONLINE\x10\xc0\x02\x12\x15\n" +
+	"\x10PRESENCE_OFFLINE\x10\xc1\x02\x12\x13\n" +
+	"\x0eFRIEND_REMOVED\x10\xc2\x02\x12\x11\n" +
+	"\fBLOCK_NOTIFY\x10\xc3\x02\x12\x10\n" +
+	"\vINVITE_ROOM\x10\xd0\x02\x12\x14\n" +
+	"\x0fINVITE_ROOM_ACK\x10\xd1\x02\x12\v\n" +
 	"\x05ERROR\x10\xff\xff\x03B\x8a\x01\n" +
 	"\vcom.chat.v1B\tChatProtoP\x01Z3github.com/cyandie/backend/api/proto/chat/v1;chatv1\xa2\x02\x03CXX\xaa\x02\aChat.V1\xca\x02\aChat\\V1\xe2\x02\x13Chat\\V1\\GPBMetadata\xea\x02\bChat::V1b\x06proto3"
 
@@ -968,7 +1544,7 @@ func file_chat_v1_chat_proto_rawDescGZIP() []byte {
 }
 
 var file_chat_v1_chat_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_chat_v1_chat_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_chat_v1_chat_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_chat_v1_chat_proto_goTypes = []any{
 	(MessageType)(0),           // 0: chat.v1.MessageType
 	(*AuthRequest)(nil),        // 1: chat.v1.AuthRequest
@@ -982,7 +1558,15 @@ var file_chat_v1_chat_proto_goTypes = []any{
 	(*SendMessageRequest)(nil), // 9: chat.v1.SendMessageRequest
 	(*ReceiveMessage)(nil),     // 10: chat.v1.ReceiveMessage
 	(*ErrorMessage)(nil),       // 11: chat.v1.ErrorMessage
-	(*ChatEnvelope)(nil),       // 12: chat.v1.ChatEnvelope
+	(*PresenceOnline)(nil),     // 12: chat.v1.PresenceOnline
+	(*PresenceOffline)(nil),    // 13: chat.v1.PresenceOffline
+	(*FriendRemoved)(nil),      // 14: chat.v1.FriendRemoved
+	(*BlockNotify)(nil),        // 15: chat.v1.BlockNotify
+	(*InviteRoomRequest)(nil),  // 16: chat.v1.InviteRoomRequest
+	(*InviteRoomNotify)(nil),   // 17: chat.v1.InviteRoomNotify
+	(*InviteRoomAccept)(nil),   // 18: chat.v1.InviteRoomAccept
+	(*InviteRoomReject)(nil),   // 19: chat.v1.InviteRoomReject
+	(*ChatEnvelope)(nil),       // 20: chat.v1.ChatEnvelope
 }
 var file_chat_v1_chat_proto_depIdxs = []int32{
 	0,  // 0: chat.v1.ChatEnvelope.type:type_name -> chat.v1.MessageType
@@ -997,11 +1581,19 @@ var file_chat_v1_chat_proto_depIdxs = []int32{
 	9,  // 9: chat.v1.ChatEnvelope.send_message_request:type_name -> chat.v1.SendMessageRequest
 	10, // 10: chat.v1.ChatEnvelope.receive_message:type_name -> chat.v1.ReceiveMessage
 	11, // 11: chat.v1.ChatEnvelope.error:type_name -> chat.v1.ErrorMessage
-	12, // [12:12] is the sub-list for method output_type
-	12, // [12:12] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	12, // 12: chat.v1.ChatEnvelope.presence_online:type_name -> chat.v1.PresenceOnline
+	13, // 13: chat.v1.ChatEnvelope.presence_offline:type_name -> chat.v1.PresenceOffline
+	14, // 14: chat.v1.ChatEnvelope.friend_removed:type_name -> chat.v1.FriendRemoved
+	15, // 15: chat.v1.ChatEnvelope.block_notify:type_name -> chat.v1.BlockNotify
+	16, // 16: chat.v1.ChatEnvelope.invite_room_request:type_name -> chat.v1.InviteRoomRequest
+	17, // 17: chat.v1.ChatEnvelope.invite_room_notify:type_name -> chat.v1.InviteRoomNotify
+	18, // 18: chat.v1.ChatEnvelope.invite_room_accept:type_name -> chat.v1.InviteRoomAccept
+	19, // 19: chat.v1.ChatEnvelope.invite_room_reject:type_name -> chat.v1.InviteRoomReject
+	20, // [20:20] is the sub-list for method output_type
+	20, // [20:20] is the sub-list for method input_type
+	20, // [20:20] is the sub-list for extension type_name
+	20, // [20:20] is the sub-list for extension extendee
+	0,  // [0:20] is the sub-list for field type_name
 }
 
 func init() { file_chat_v1_chat_proto_init() }
@@ -1009,7 +1601,7 @@ func file_chat_v1_chat_proto_init() {
 	if File_chat_v1_chat_proto != nil {
 		return
 	}
-	file_chat_v1_chat_proto_msgTypes[11].OneofWrappers = []any{
+	file_chat_v1_chat_proto_msgTypes[19].OneofWrappers = []any{
 		(*ChatEnvelope_AuthRequest)(nil),
 		(*ChatEnvelope_AuthResponse)(nil),
 		(*ChatEnvelope_Heartbeat)(nil),
@@ -1021,6 +1613,14 @@ func file_chat_v1_chat_proto_init() {
 		(*ChatEnvelope_SendMessageRequest)(nil),
 		(*ChatEnvelope_ReceiveMessage)(nil),
 		(*ChatEnvelope_Error)(nil),
+		(*ChatEnvelope_PresenceOnline)(nil),
+		(*ChatEnvelope_PresenceOffline)(nil),
+		(*ChatEnvelope_FriendRemoved)(nil),
+		(*ChatEnvelope_BlockNotify)(nil),
+		(*ChatEnvelope_InviteRoomRequest)(nil),
+		(*ChatEnvelope_InviteRoomNotify)(nil),
+		(*ChatEnvelope_InviteRoomAccept)(nil),
+		(*ChatEnvelope_InviteRoomReject)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -1028,7 +1628,7 @@ func file_chat_v1_chat_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_chat_v1_chat_proto_rawDesc), len(file_chat_v1_chat_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   12,
+			NumMessages:   20,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
