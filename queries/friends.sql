@@ -23,3 +23,18 @@ ORDER BY created_at DESC;
 
 -- name: DeleteFriendship :one
 DELETE FROM friendships WHERE id = $1 RETURNING *;
+
+-- name: CreateBlockRelation :one
+INSERT INTO block_relations (blocker_id, blocked_id, reason) VALUES ($1, $2, $3) RETURNING *;
+
+-- name: DeleteBlockRelation :one
+DELETE FROM block_relations WHERE blocker_id = $1 AND blocked_id = $2 RETURNING *;
+
+-- name: ListBlockedUsers :many
+SELECT * FROM block_relations WHERE blocker_id = $1 ORDER BY created_at DESC;
+
+-- name: IsBlockedBy :one
+SELECT id FROM block_relations WHERE blocker_id = $1 AND blocked_id = $2;
+
+-- name: DeleteFriendshipByUsers :one
+DELETE FROM friendships WHERE (user_id = $1 AND friend_id = $2) OR (user_id = $2 AND friend_id = $1) RETURNING *;

@@ -35,6 +35,14 @@ type AuditLog struct {
 	CreatedAt   time.Time             `json:"created_at"`
 }
 
+type BlockRelation struct {
+	ID        uuid.UUID      `json:"id"`
+	BlockerID uuid.UUID      `json:"blocker_id"`
+	BlockedID uuid.UUID      `json:"blocked_id"`
+	Reason    sql.NullString `json:"reason"`
+	CreatedAt time.Time      `json:"created_at"`
+}
+
 type ChatMessage struct {
 	ID        uuid.UUID `json:"id"`
 	RoomID    uuid.UUID `json:"room_id"`

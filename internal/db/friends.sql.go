@@ -7,9 +7,33 @@ package db
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
 )
+
+const createBlockRelation = `-- name: CreateBlockRelation :one
+INSERT INTO block_relations (blocker_id, blocked_id, reason) VALUES ($1, $2, $3) RETURNING id, blocker_id, blocked_id, reason, created_at
+`
+
+type CreateBlockRelationParams struct {
+	BlockerID uuid.UUID      `json:"blocker_id"`
+	BlockedID uuid.UUID      `json:"blocked_id"`
+	Reason    sql.NullString `json:"reason"`
+}
+
+func (q *Queries) CreateBlockRelation(ctx context.Context, arg CreateBlockRelationParams) (BlockRelation, error) {
+	row := q.db.QueryRowContext(ctx, createBlockRelation, arg.BlockerID, arg.BlockedID, arg.Reason)
+	var i BlockRelation
+	err := row.Scan(
+		&i.ID,
+		&i.BlockerID,
+		&i.BlockedID,
+		&i.Reason,
+		&i.CreatedAt,
+	)
+	return i, err
+}
 
 const createFriendship = `-- name: CreateFriendship :one
 INSERT INTO friendships (user_id, friend_id, status)
@@ -37,12 +61,57 @@ func (q *Queries) CreateFriendship(ctx context.Context, arg CreateFriendshipPara
 	return i, err
 }
 
+const deleteBlockRelation = `-- name: DeleteBlockRelation :one
+DELETE FROM block_relations WHERE blocker_id = $1 AND blocked_id = $2 RETURNING id, blocker_id, blocked_id, reason, created_at
+`
+
+type DeleteBlockRelationParams struct {
+	BlockerID uuid.UUID `json:"blocker_id"`
+	BlockedID uuid.UUID `json:"blocked_id"`
+}
+
+func (q *Queries) DeleteBlockRelation(ctx context.Context, arg DeleteBlockRelationParams) (BlockRelation, error) {
+	row := q.db.QueryRowContext(ctx, deleteBlockRelation, arg.BlockerID, arg.BlockedID)
+	var i BlockRelation
+	err := row.Scan(
+		&i.ID,
+		&i.BlockerID,
+		&i.BlockedID,
+		&i.Reason,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const deleteFriendship = `-- name: DeleteFriendship :one
 DELETE FROM friendships WHERE id = $1 RETURNING id, user_id, friend_id, status, created_at, updated_at
 `
 
 func (q *Queries) DeleteFriendship(ctx context.Context, id uuid.UUID) (Friendship, error) {
 	row := q.db.QueryRowContext(ctx, deleteFriendship, id)
+	var i Friendship
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.FriendID,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const deleteFriendshipByUsers = `-- name: DeleteFriendshipByUsers :one
+DELETE FROM friendships WHERE (user_id = $1 AND friend_id = $2) OR (user_id = $2 AND friend_id = $1) RETURNING id, user_id, friend_id, status, created_at, updated_at
+`
+
+type DeleteFriendshipByUsersParams struct {
+	UserID   uuid.UUID `json:"user_id"`
+	FriendID uuid.UUID `json:"friend_id"`
+}
+
+func (q *Queries) DeleteFriendshipByUsers(ctx context.Context, arg DeleteFriendshipByUsersParams) (Friendship, error) {
+	row := q.db.QueryRowContext(ctx, deleteFriendshipByUsers, arg.UserID, arg.FriendID)
 	var i Friendship
 	err := row.Scan(
 		&i.ID,
@@ -71,6 +140,55 @@ func (q *Queries) GetFriendship(ctx context.Context, id uuid.UUID) (Friendship, 
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const isBlockedBy = `-- name: IsBlockedBy :one
+SELECT id FROM block_relations WHERE blocker_id = $1 AND blocked_id = $2
+`
+
+type IsBlockedByParams struct {
+	BlockerID uuid.UUID `json:"blocker_id"`
+	BlockedID uuid.UUID `json:"blocked_id"`
+}
+
+func (q *Queries) IsBlockedBy(ctx context.Context, arg IsBlockedByParams) (uuid.UUID, error) {
+	row := q.db.QueryRowContext(ctx, isBlockedBy, arg.BlockerID, arg.BlockedID)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
+const listBlockedUsers = `-- name: ListBlockedUsers :many
+SELECT id, blocker_id, blocked_id, reason, created_at FROM block_relations WHERE blocker_id = $1 ORDER BY created_at DESC
+`
+
+func (q *Queries) ListBlockedUsers(ctx context.Context, blockerID uuid.UUID) ([]BlockRelation, error) {
+	rows, err := q.db.QueryContext(ctx, listBlockedUsers, blockerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []BlockRelation{}
+	for rows.Next() {
+		var i BlockRelation
+		if err := rows.Scan(
+			&i.ID,
+			&i.BlockerID,
+			&i.BlockedID,
+			&i.Reason,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listFriends = `-- name: ListFriends :many
