@@ -10,13 +10,24 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type ChatService struct {
-	queries db.Querier
-	server  *TCPServer
+// BlockChecker checks if a user is blocked by another.
+// Defined locally to avoid circular import with friends package.
+type BlockChecker interface {
+	IsBlocked(ctx context.Context, targetUserID, byUserID string) (bool, error)
 }
 
-func NewChatService(queries db.Querier, server *TCPServer) *ChatService {
-	return &ChatService{queries: queries, server: server}
+type ChatService struct {
+	queries      db.Querier
+	server       *TCPServer
+	blockChecker BlockChecker
+}
+
+func NewChatService(queries db.Querier, server *TCPServer, blockChecker BlockChecker) *ChatService {
+	return &ChatService{queries: queries, server: server, blockChecker: blockChecker}
+}
+
+func (s *ChatService) setBlockChecker(checker BlockChecker) {
+	s.blockChecker = checker
 }
 
 func (s *ChatService) Start() error {
