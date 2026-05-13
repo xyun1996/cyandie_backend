@@ -3,6 +3,7 @@ package friends
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	coreerrors "github.com/cyandie/backend/internal/core/errors"
 	"github.com/go-chi/chi/v5"
@@ -21,6 +22,11 @@ func (h *FriendsHandler) Routes() chi.Router {
 	r.Post("/request", h.SendRequest)
 	r.Put("/{id}/accept", h.AcceptRequest)
 	r.Delete("/{id}/reject", h.RejectRequest)
+	r.Post("/block", h.Block)
+	r.Delete("/block/{userID}", h.Unblock)
+	r.Get("/blocked", h.ListBlocked)
+	r.Delete("/{userID}", h.RemoveFriend)
+	r.Get("/recent", h.ListRecentContacts)
 	r.Get("/", h.ListFriends)
 	r.Get("/pending", h.ListPendingRequests)
 	r.Get("/online", h.GetOnlineFriends)
@@ -98,6 +104,69 @@ func (h *FriendsHandler) GetOnlineFriends(w http.ResponseWriter, r *http.Request
 	}
 
 	writeJSON(w, http.StatusOK, online)
+}
+
+func (h *FriendsHandler) Block(w http.ResponseWriter, r *http.Request) {
+	userID, _ := r.Context().Value("userID").(string)
+	var req struct {
+		UserID string `json:"user_id"`
+		Reason string `json:"reason"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		coreerrors.New(coreerrors.ErrBadRequest, "invalid request body").WriteHTTP(w)
+		return
+	}
+	if err := h.service.Block(r.Context(), userID, req.UserID, req.Reason); err != nil {
+		writeAppError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *FriendsHandler) Unblock(w http.ResponseWriter, r *http.Request) {
+	userID, _ := r.Context().Value("userID").(string)
+	blockedUserID := chi.URLParam(r, "userID")
+	if err := h.service.Unblock(r.Context(), userID, blockedUserID); err != nil {
+		writeAppError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *FriendsHandler) ListBlocked(w http.ResponseWriter, r *http.Request) {
+	userID, _ := r.Context().Value("userID").(string)
+	blocked, err := h.service.ListBlockedUsers(r.Context(), userID)
+	if err != nil {
+		writeAppError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, blocked)
+}
+
+func (h *FriendsHandler) RemoveFriend(w http.ResponseWriter, r *http.Request) {
+	userID, _ := r.Context().Value("userID").(string)
+	friendUserID := chi.URLParam(r, "userID")
+	if err := h.service.RemoveFriend(r.Context(), userID, friendUserID); err != nil {
+		writeAppError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *FriendsHandler) ListRecentContacts(w http.ResponseWriter, r *http.Request) {
+	userID, _ := r.Context().Value("userID").(string)
+	limit := 20
+	if l := r.URL.Query().Get("limit"); l != "" {
+		if v, err := strconv.Atoi(l); err == nil && v > 0 && v <= 100 {
+			limit = v
+		}
+	}
+	contacts, err := h.service.ListRecentContacts(r.Context(), userID, limit)
+	if err != nil {
+		writeAppError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, contacts)
 }
 
 func writeJSON(w http.ResponseWriter, status int, data any) {
