@@ -137,24 +137,50 @@ func (s *FriendsService) ListPendingRequests(ctx context.Context, userID string)
 	return requests, nil
 }
 
-func (s *FriendsService) SetOnline(ctx context.Context, userID string) error {
-	id, err := uuid.Parse(userID)
-	if err != nil {
-		return errors.New(errors.ErrBadRequest, "invalid user ID")
+func (s *FriendsService) SetOnline(ctx context.Context, userID, username string) error {
+	if s.rdb == nil {
+		return nil
 	}
-
-	key := fmt.Sprintf("friends:online:%s", id)
-	return s.rdb.Set(ctx, key, time.Now().Unix(), 5*time.Minute).Err()
+	key := fmt.Sprintf("friends:online:%s", userID)
+	// SETNX returns true if the key was set (first online)
+	set, err := s.rdb.SetNX(ctx, key, username, 5*time.Minute).Result()
+	if err != nil {
+		return errors.New(errors.ErrInternal, "failed to set online")
+	}
+	if set && s.notifier != nil {
+		// Just came online — notify friends
+		friendships, _ := s.queries.ListFriends(ctx, uuid.MustParse(userID))
+		friendIDs := make([]string, 0, len(friendships))
+		for _, f := range friendships {
+			friendIDs = append(friendIDs, f.FriendID.String())
+		}
+		s.notifier.NotifyOnline(ctx, userID, username, friendIDs)
+	}
+	// Refresh TTL
+	s.rdb.Expire(ctx, key, 5*time.Minute)
+	return nil
 }
 
 func (s *FriendsService) SetOffline(ctx context.Context, userID string) error {
-	id, err := uuid.Parse(userID)
-	if err != nil {
-		return errors.New(errors.ErrBadRequest, "invalid user ID")
+	if s.rdb == nil {
+		return nil
 	}
-
-	key := fmt.Sprintf("friends:online:%s", id)
-	return s.rdb.Del(ctx, key).Err()
+	key := fmt.Sprintf("friends:online:%s", userID)
+	// Check if currently online before removing
+	exists, err := s.rdb.Exists(ctx, key).Result()
+	if err != nil {
+		return errors.New(errors.ErrInternal, "failed to check online")
+	}
+	s.rdb.Del(ctx, key)
+	if exists > 0 && s.notifier != nil {
+		friendships, _ := s.queries.ListFriends(ctx, uuid.MustParse(userID))
+		friendIDs := make([]string, 0, len(friendships))
+		for _, f := range friendships {
+			friendIDs = append(friendIDs, f.FriendID.String())
+		}
+		s.notifier.NotifyOffline(ctx, userID, friendIDs)
+	}
+	return nil
 }
 
 func (s *FriendsService) GetOnlineFriends(ctx context.Context, userID string) ([]string, error) {
