@@ -65,6 +65,8 @@ func (s *ChatService) handleMessage(conn *Connection, frame *Frame) {
 		s.handleLeaveRoom(conn, env)
 	case chatv1.MessageType_SEND_MSG:
 		s.handleSendMessage(conn, env)
+	case chatv1.MessageType_INVITE_ROOM:
+		s.handleInviteRoom(conn, env)
 	}
 }
 
@@ -181,6 +183,54 @@ func (s *ChatService) handleSendMessage(conn *Connection, env *chatv1.ChatEnvelo
 		},
 	}
 	s.broadcastEnvelope(req.RoomId, recv, conn.ID)
+}
+
+func (s *ChatService) handleInviteRoom(conn *Connection, env *chatv1.ChatEnvelope) {
+	if conn.UserID == "" {
+		s.sendError(conn, "UNAUTHORIZED", "not authenticated")
+		return
+	}
+	req := env.GetInviteRoomRequest()
+	if req == nil {
+		s.sendError(conn, "BAD_REQUEST", "missing invite room request")
+		return
+	}
+
+	// Verify inviter is in the room
+	roomUID, err := uuid.Parse(req.RoomId)
+	if err != nil {
+		s.sendError(conn, "BAD_REQUEST", "invalid room id")
+		return
+	}
+	members, err := s.queries.GetRoomMembers(context.Background(), roomUID)
+	if err != nil {
+		s.sendError(conn, "NOT_FOUND", "room not found")
+		return
+	}
+	inRoom := false
+	for _, m := range members {
+		if m.UserID.String() == conn.UserID {
+			inRoom = true
+			break
+		}
+	}
+	if !inRoom {
+		s.sendError(conn, "FORBIDDEN", "you are not in this room")
+		return
+	}
+
+	// Forward invite to target user
+	notify := &chatv1.ChatEnvelope{
+		Type: chatv1.MessageType_INVITE_ROOM,
+		Payload: &chatv1.ChatEnvelope_InviteRoomNotify{
+			InviteRoomNotify: &chatv1.InviteRoomNotify{
+				RoomId:         req.RoomId,
+				InviterId:      conn.UserID,
+				InviterUsername: "",
+			},
+		},
+	}
+	s.server.SendToUser(req.TargetUserId, notify)
 }
 
 func (s *ChatService) sendEnvelope(conn *Connection, env *chatv1.ChatEnvelope) {
