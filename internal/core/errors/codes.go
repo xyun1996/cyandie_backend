@@ -9,7 +9,8 @@ const (
 	ErrNotFound     = "NOT_FOUND"
 	ErrConflict     = "CONFLICT"
 	ErrRateLimited  = "RATE_LIMITED"
-	ErrTimeout      = "TIMEOUT"
+	ErrTimeout        = "TIMEOUT"
+	ErrNotImplemented = "NOT_IMPLEMENTED"
 )
 
 // Auth
