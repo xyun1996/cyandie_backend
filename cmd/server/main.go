@@ -114,7 +114,8 @@ func main() {
 	platformsModule := platforms.NewModule(queries, platformRegistry)
 	app.Register(platformsModule)
 
-	chatModule := chat.NewModule(queries, ":9091")
+	// Chat module created first with nil block checker (wired later)
+	chatModule := chat.NewModule(queries, ":9091", nil)
 	app.Register(chatModule)
 	chatModule.RegisterRoutes(router)
 
@@ -124,8 +125,12 @@ func main() {
 	adminModule := admin.NewModule(queries)
 	app.Register(adminModule)
 
-	friendsModule := friends.NewModule(queries, rdb.Client)
+	// Friends module receives PresenceNotifier from chat
+	friendsModule := friends.NewModule(queries, rdb.Client, chatModule.PresenceNotifier())
 	app.Register(friendsModule)
+
+	// Wire block checker from friends back to chat
+	chatModule.SetBlockChecker(friendsModule.BlockChecker())
 
 	healthHandler := health.NewHandler()
 	healthHandler.RegisterRoutes(router)
