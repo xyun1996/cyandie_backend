@@ -6,6 +6,9 @@ import (
 	"net"
 	"sync"
 	"time"
+
+	chatv1 "github.com/cyandie/backend/api/proto/chat/v1"
+	"google.golang.org/protobuf/proto"
 )
 
 type TCPServer struct {
@@ -121,6 +124,20 @@ func (s *TCPServer) GetConnection(userID string) (*Connection, bool) {
 		}
 	}
 	return nil, false
+}
+
+// SendToUser sends a protobuf envelope to a specific user if they are connected.
+func (s *TCPServer) SendToUser(userID string, msg *chatv1.ChatEnvelope) {
+	conn, ok := s.GetConnection(userID)
+	if !ok {
+		return
+	}
+	data, err := proto.Marshal(msg)
+	if err != nil {
+		return
+	}
+	frame := Frame{Type: uint16(msg.Type), Value: data}
+	conn.Send(frame)
 }
 
 func generateConnID() string {
