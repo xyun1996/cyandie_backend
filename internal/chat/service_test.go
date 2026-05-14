@@ -3,8 +3,10 @@ package chat
 import (
 	"context"
 	"database/sql"
+	"io"
 	"net"
 	"testing"
+	"time"
 
 	chatv1 "github.com/cyandie/backend/api/proto/chat/v1"
 	"github.com/cyandie/backend/internal/db"
@@ -237,6 +239,36 @@ func testConn(id string) *Connection {
 	}()
 	return &Connection{ID: id, Conn: client}
 }
+
+// captureConn is a net.Conn that buffers all writes in-memory
+// so tests can read them back. It satisfies both net.Conn and
+// io.Reader for use with DecodeFrame.
+type captureConn struct {
+	buf []byte
+}
+
+func newCaptureConn() *captureConn { return &captureConn{} }
+
+func (c *captureConn) Read(b []byte) (n int, err error) {
+	if len(c.buf) == 0 {
+		return 0, io.EOF
+	}
+	n = copy(b, c.buf)
+	c.buf = c.buf[n:]
+	return n, nil
+}
+
+func (c *captureConn) Write(b []byte) (n int, err error) {
+	c.buf = append(c.buf, b...)
+	return len(b), nil
+}
+
+func (c *captureConn) Close() error                       { return nil }
+func (c *captureConn) LocalAddr() net.Addr                { return nil }
+func (c *captureConn) RemoteAddr() net.Addr               { return nil }
+func (c *captureConn) SetDeadline(t time.Time) error      { return nil }
+func (c *captureConn) SetReadDeadline(t time.Time) error  { return nil }
+func (c *captureConn) SetWriteDeadline(t time.Time) error { return nil }
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -690,6 +722,66 @@ func TestChatService_HandleInviteRoom_Success(t *testing.T) {
 	env := inviteRoomEnvelope(roomID.String(), targetID.String())
 	svc.handleInviteRoom(conn, env)
 	// No panic = success
+}
+
+func TestChatService_HandleInviteRoom_InviterUsername(t *testing.T) {
+	roomID := uuid.New()
+	userID := uuid.New()
+	targetID := uuid.New()
+
+	q := &mockQuerier{
+		members: []db.ChatRoomMember{
+			{ID: uuid.New(), RoomID: roomID, UserID: userID, Role: "owner"},
+		},
+	}
+	srv := NewTCPServer("127.0.0.1:0")
+	svc := NewChatService(q, srv, nil, nil, nil)
+
+	// Set up the target user's connection so SendToUser can find it.
+	// Use a captureConn to record the bytes written by Connection.Send.
+	cc := newCaptureConn()
+	targetConn := &Connection{
+		ID:     "target-conn",
+		UserID: targetID.String(),
+		Conn:   cc,
+	}
+	srv.mu.Lock()
+	srv.conns[targetConn.ID] = targetConn
+	srv.mu.Unlock()
+
+	// Set up inviter connection with a known username.
+	inviterConn := testConn("inviter-conn")
+	inviterConn.UserID = userID.String()
+	inviterConn.Username = "alice"
+	defer inviterConn.Conn.Close()
+
+	env := inviteRoomEnvelope(roomID.String(), targetID.String())
+	svc.handleInviteRoom(inviterConn, env)
+
+	// Decode the frame that was written to the target connection.
+	frame, err := DecodeFrame(cc)
+	if err != nil {
+		t.Fatalf("failed to decode frame sent to target: %v", err)
+	}
+
+	got := &chatv1.ChatEnvelope{}
+	if err := proto.Unmarshal(frame.Value, got); err != nil {
+		t.Fatalf("failed to unmarshal envelope: %v", err)
+	}
+
+	notify := got.GetInviteRoomNotify()
+	if notify == nil {
+		t.Fatal("expected InviteRoomNotify payload, got nil")
+	}
+	if notify.InviterUsername != "alice" {
+		t.Errorf("expected InviterUsername %q, got %q", "alice", notify.InviterUsername)
+	}
+	if notify.InviterId != userID.String() {
+		t.Errorf("expected InviterId %q, got %q", userID.String(), notify.InviterId)
+	}
+	if notify.RoomId != roomID.String() {
+		t.Errorf("expected RoomId %q, got %q", roomID.String(), notify.RoomId)
+	}
 }
 
 func TestChatService_HandleMessage_Auth(t *testing.T) {

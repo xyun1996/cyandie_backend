@@ -290,7 +290,7 @@ func (s *ChatService) handleInviteRoom(conn *Connection, env *chatv1.ChatEnvelop
 			InviteRoomNotify: &chatv1.InviteRoomNotify{
 				RoomId:         req.RoomId,
 				InviterId:      conn.UserID,
-				InviterUsername: "",
+				InviterUsername: conn.Username,
 			},
 		},
 	}
