@@ -21,6 +21,10 @@ type mockAdminQueries struct {
 	logsErr   error
 }
 
+type mockAuthService struct{}
+
+func (mockAuthService) GenerateToken(_ string) (string, error) { return "mock-token", nil }
+
 func (m *mockAdminQueries) CreateAdminUser(_ context.Context, _ db.CreateAdminUserParams) (db.AdminUser, error) {
 	return db.AdminUser{}, nil
 }
@@ -121,6 +125,9 @@ func (m *mockAdminQueries) DeleteFriendship(_ context.Context, _ uuid.UUID) (db.
 func (m *mockAdminQueries) GetFriendship(_ context.Context, _ uuid.UUID) (db.Friendship, error) {
 	return db.Friendship{}, sql.ErrNoRows
 }
+func (m *mockAdminQueries) GetFriendshipByUsers(_ context.Context, _ db.GetFriendshipByUsersParams) (db.Friendship, error) {
+	return db.Friendship{}, nil
+}
 func (m *mockAdminQueries) ListFriends(_ context.Context, _ uuid.UUID) ([]db.Friendship, error) { return nil, nil }
 func (m *mockAdminQueries) ListPendingRequests(_ context.Context, _ uuid.UUID) ([]db.Friendship, error) {
 	return nil, nil
@@ -143,6 +150,7 @@ func (m *mockAdminQueries) IsBlockedBy(_ context.Context, _ db.IsBlockedByParams
 func (m *mockAdminQueries) DeleteFriendshipByUsers(_ context.Context, _ db.DeleteFriendshipByUsersParams) (db.Friendship, error) {
 	return db.Friendship{}, nil
 }
+func (m *mockAdminQueries) ListRoomsByUser(_ context.Context, _ uuid.UUID) ([]db.ChatRoom, error) { return nil, nil }
 
 func TestAdminService_Login_Success(t *testing.T) {
 	hash, _ := bcrypt.GenerateFromPassword([]byte("pass123"), bcrypt.DefaultCost)
@@ -155,7 +163,7 @@ func TestAdminService_Login_Success(t *testing.T) {
 			Status:       "active",
 		},
 	}
-	svc := NewAdminService(q)
+	svc := NewAdminService(q, mockAuthService{})
 
 	admin, err := svc.Login(context.Background(), AdminLoginRequest{Username: "admin1", Password: "pass123"})
 	if err != nil {
@@ -177,7 +185,7 @@ func TestAdminService_Login_InvalidPassword(t *testing.T) {
 			Status:       "active",
 		},
 	}
-	svc := NewAdminService(q)
+	svc := NewAdminService(q, mockAuthService{})
 
 	_, err := svc.Login(context.Background(), AdminLoginRequest{Username: "admin1", Password: "wrong"})
 	if err == nil {
@@ -187,7 +195,7 @@ func TestAdminService_Login_InvalidPassword(t *testing.T) {
 
 func TestAdminService_Login_NotFound(t *testing.T) {
 	q := &mockAdminQueries{adminErr: sql.ErrNoRows}
-	svc := NewAdminService(q)
+	svc := NewAdminService(q, mockAuthService{})
 
 	_, err := svc.Login(context.Background(), AdminLoginRequest{Username: "nobody", Password: "pass"})
 	if err == nil {
@@ -206,7 +214,7 @@ func TestAdminService_Login_BannedAdmin(t *testing.T) {
 			Status:       "banned",
 		},
 	}
-	svc := NewAdminService(q)
+	svc := NewAdminService(q, mockAuthService{})
 
 	_, err := svc.Login(context.Background(), AdminLoginRequest{Username: "bannedadmin", Password: "pass123"})
 	if err == nil {
@@ -219,7 +227,7 @@ func TestAdminService_UpdateUserStatus(t *testing.T) {
 	q := &mockAdminQueries{
 		status: db.User{ID: uid, Username: "user1", Status: "banned"},
 	}
-	svc := NewAdminService(q)
+	svc := NewAdminService(q, mockAuthService{})
 
 	user, err := svc.UpdateUserStatus(context.Background(), uid.String(), "banned")
 	if err != nil {
@@ -232,7 +240,7 @@ func TestAdminService_UpdateUserStatus(t *testing.T) {
 
 func TestAdminService_UpdateUserStatus_InvalidStatus(t *testing.T) {
 	q := &mockAdminQueries{}
-	svc := NewAdminService(q)
+	svc := NewAdminService(q, mockAuthService{})
 
 	_, err := svc.UpdateUserStatus(context.Background(), uuid.New().String(), "invalid")
 	if err == nil {
@@ -246,7 +254,7 @@ func TestAdminService_ListAuditLogs(t *testing.T) {
 			{ID: uuid.New(), Action: "update_user_status", TargetType: "user"},
 		},
 	}
-	svc := NewAdminService(q)
+	svc := NewAdminService(q, mockAuthService{})
 
 	logs, err := svc.ListAuditLogs(context.Background(), 20, 0)
 	if err != nil {

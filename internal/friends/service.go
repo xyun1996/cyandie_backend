@@ -57,7 +57,10 @@ func (s *FriendsService) SendRequest(ctx context.Context, fromUserID, toUserID s
 		return nil, errors.New(errors.ErrForbidden, "you are blocked by this user")
 	}
 
-	existing, err := s.queries.GetFriendship(ctx, from)
+	existing, err := s.queries.GetFriendshipByUsers(ctx, db.GetFriendshipByUsersParams{
+		UserID:   from,
+		FriendID: to,
+	})
 	if err == nil {
 		_ = existing
 		return nil, errors.New(errors.ErrConflict, "friendship already exists")

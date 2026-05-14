@@ -27,6 +27,10 @@ type mockFriendsQueries struct {
 	isBlockedErr     error
 	deleteByUsers    db.Friendship
 	deleteByUsersErr error
+
+	// GetFriendshipByUsers mock fields
+	friendshipByUsers    db.Friendship
+	friendshipByUsersErr error
 }
 
 func (m *mockFriendsQueries) CreateFriendship(_ context.Context, _ db.CreateFriendshipParams) (db.Friendship, error) {
@@ -37,6 +41,9 @@ func (m *mockFriendsQueries) DeleteFriendship(_ context.Context, _ uuid.UUID) (d
 }
 func (m *mockFriendsQueries) GetFriendship(_ context.Context, _ uuid.UUID) (db.Friendship, error) {
 	return m.friendship, m.friendErr
+}
+func (m *mockFriendsQueries) GetFriendshipByUsers(_ context.Context, _ db.GetFriendshipByUsersParams) (db.Friendship, error) {
+	return m.friendshipByUsers, m.friendshipByUsersErr
 }
 func (m *mockFriendsQueries) ListFriends(_ context.Context, _ uuid.UUID) ([]db.Friendship, error) {
 	return m.friendships, m.friendsErr
@@ -151,14 +158,15 @@ func (m *mockFriendsQueries) IsBlockedBy(_ context.Context, _ db.IsBlockedByPara
 func (m *mockFriendsQueries) DeleteFriendshipByUsers(_ context.Context, _ db.DeleteFriendshipByUsersParams) (db.Friendship, error) {
 	return m.deleteByUsers, m.deleteByUsersErr
 }
+func (m *mockFriendsQueries) ListRoomsByUser(_ context.Context, _ uuid.UUID) ([]db.ChatRoom, error) { return nil, nil }
 
 func TestFriendsService_SendRequest(t *testing.T) {
 	from := uuid.New()
 	to := uuid.New()
 	q := &mockFriendsQueries{
-		friendErr:        sql.ErrNoRows,
-		isBlockedErr:     sql.ErrNoRows,
-		createFriendship: db.Friendship{ID: uuid.New(), UserID: from, FriendID: to, Status: "pending"},
+		friendshipByUsersErr: sql.ErrNoRows,
+		isBlockedErr:        sql.ErrNoRows,
+		createFriendship:    db.Friendship{ID: uuid.New(), UserID: from, FriendID: to, Status: "pending"},
 	}
 	svc := NewFriendsService(q, nil, nil)
 

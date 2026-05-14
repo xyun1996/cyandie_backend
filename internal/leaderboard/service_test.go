@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"math"
 	"testing"
 
 	"github.com/cyandie/backend/internal/db"
@@ -136,6 +137,9 @@ func (m *mockLBQueries) DeleteFriendship(_ context.Context, _ uuid.UUID) (db.Fri
 func (m *mockLBQueries) GetFriendship(_ context.Context, _ uuid.UUID) (db.Friendship, error) {
 	return db.Friendship{}, sql.ErrNoRows
 }
+func (m *mockLBQueries) GetFriendshipByUsers(_ context.Context, _ db.GetFriendshipByUsersParams) (db.Friendship, error) {
+	return db.Friendship{}, nil
+}
 func (m *mockLBQueries) ListFriends(_ context.Context, _ uuid.UUID) ([]db.Friendship, error) {
 	return nil, nil
 }
@@ -160,6 +164,7 @@ func (m *mockLBQueries) IsBlockedBy(_ context.Context, _ db.IsBlockedByParams) (
 func (m *mockLBQueries) DeleteFriendshipByUsers(_ context.Context, _ db.DeleteFriendshipByUsersParams) (db.Friendship, error) {
 	return db.Friendship{}, nil
 }
+func (m *mockLBQueries) ListRoomsByUser(_ context.Context, _ uuid.UUID) ([]db.ChatRoom, error) { return nil, nil }
 
 func newTestLBService() *LeaderboardService {
 	q := &mockLBQueries{config: db.LeaderboardConfig{
@@ -172,7 +177,7 @@ func newTestLBService() *LeaderboardService {
 
 func TestLeaderboardService_SubmitScore(t *testing.T) {
 	svc := newTestLBService()
-	err := svc.SubmitScore(context.Background(), "test-board", "user-1", 100.0)
+	err := svc.SubmitScore(context.Background(), "test-board", uuid.New().String(), 100.0)
 	if err != nil {
 		t.Fatalf("SubmitScore failed: %v", err)
 	}
@@ -180,16 +185,47 @@ func TestLeaderboardService_SubmitScore(t *testing.T) {
 
 func TestLeaderboardService_SubmitScore_BoardNotFound(t *testing.T) {
 	svc := newTestLBService()
-	err := svc.SubmitScore(context.Background(), "nonexistent", "user-1", 100.0)
+	err := svc.SubmitScore(context.Background(), "nonexistent", uuid.New().String(), 100.0)
 	if err == nil {
 		t.Error("expected error for nonexistent board")
 	}
 }
 
+func TestLeaderboardService_SubmitScore_InvalidScore(t *testing.T) {
+	svc := newTestLBService()
+	tests := []struct {
+		name  string
+		score float64
+	}{
+		{"NaN", math.NaN()},
+		{"positive Inf", math.Inf(1)},
+		{"negative Inf", math.Inf(-1)},
+		{"negative", -1.0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := svc.SubmitScore(context.Background(), "test-board", uuid.New().String(), tt.score)
+			if err == nil {
+				t.Error("expected error for invalid score")
+			}
+		})
+	}
+}
+
+func TestLeaderboardService_SubmitScore_InvalidUserID(t *testing.T) {
+	svc := newTestLBService()
+	err := svc.SubmitScore(context.Background(), "test-board", "not-a-uuid", 100.0)
+	if err == nil {
+		t.Error("expected error for invalid user ID")
+	}
+}
+
 func TestLeaderboardService_GetRanking(t *testing.T) {
 	svc := newTestLBService()
-	svc.SubmitScore(context.Background(), "test-board", "user-1", 100.0)
-	svc.SubmitScore(context.Background(), "test-board", "user-2", 200.0)
+	uid1 := uuid.New().String()
+	uid2 := uuid.New().String()
+	svc.SubmitScore(context.Background(), "test-board", uid1, 100.0)
+	svc.SubmitScore(context.Background(), "test-board", uid2, 200.0)
 
 	entries, err := svc.GetRanking(context.Background(), "test-board", 10, 0)
 	if err != nil {

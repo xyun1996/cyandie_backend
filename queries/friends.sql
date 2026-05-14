@@ -6,6 +6,10 @@ RETURNING *;
 -- name: GetFriendship :one
 SELECT * FROM friendships WHERE id = $1;
 
+-- name: GetFriendshipByUsers :one
+SELECT * FROM friendships
+WHERE (user_id = $1 AND friend_id = $2) OR (user_id = $2 AND friend_id = $1);
+
 -- name: UpdateFriendshipStatus :one
 UPDATE friendships SET status = $1, updated_at = now()
 WHERE id = $2

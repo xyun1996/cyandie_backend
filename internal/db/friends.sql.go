@@ -142,6 +142,30 @@ func (q *Queries) GetFriendship(ctx context.Context, id uuid.UUID) (Friendship, 
 	return i, err
 }
 
+const getFriendshipByUsers = `-- name: GetFriendshipByUsers :one
+SELECT id, user_id, friend_id, status, created_at, updated_at FROM friendships
+WHERE (user_id = $1 AND friend_id = $2) OR (user_id = $2 AND friend_id = $1)
+`
+
+type GetFriendshipByUsersParams struct {
+	UserID   uuid.UUID `json:"user_id"`
+	FriendID uuid.UUID `json:"friend_id"`
+}
+
+func (q *Queries) GetFriendshipByUsers(ctx context.Context, arg GetFriendshipByUsersParams) (Friendship, error) {
+	row := q.db.QueryRowContext(ctx, getFriendshipByUsers, arg.UserID, arg.FriendID)
+	var i Friendship
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.FriendID,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const isBlockedBy = `-- name: IsBlockedBy :one
 SELECT id FROM block_relations WHERE blocker_id = $1 AND blocked_id = $2
 `

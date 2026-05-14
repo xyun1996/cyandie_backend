@@ -171,6 +171,9 @@ func (m *mockQueries) DeleteFriendship(_ context.Context, _ uuid.UUID) (db.Frien
 func (m *mockQueries) GetFriendship(_ context.Context, _ uuid.UUID) (db.Friendship, error) {
 	return db.Friendship{}, sql.ErrNoRows
 }
+func (m *mockQueries) GetFriendshipByUsers(_ context.Context, _ db.GetFriendshipByUsersParams) (db.Friendship, error) {
+	return db.Friendship{}, nil
+}
 func (m *mockQueries) ListFriends(_ context.Context, _ uuid.UUID) ([]db.Friendship, error) {
 	return nil, nil
 }
@@ -195,3 +198,4 @@ func (m *mockQueries) IsBlockedBy(_ context.Context, _ db.IsBlockedByParams) (uu
 func (m *mockQueries) DeleteFriendshipByUsers(_ context.Context, _ db.DeleteFriendshipByUsersParams) (db.Friendship, error) {
 	return db.Friendship{}, nil
 }
+func (m *mockQueries) ListRoomsByUser(_ context.Context, _ uuid.UUID) ([]db.ChatRoom, error) { return nil, nil }
