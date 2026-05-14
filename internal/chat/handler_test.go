@@ -21,7 +21,7 @@ import (
 // ---------------------------------------------------------------------------
 
 func setupHandlerRouter(q *mockQuerier) *chi.Mux {
-	srv := NewTCPServer("127.0.0.1:0")
+	srv := NewTCPServer("127.0.0.1:0", 0, 0)
 	svc := NewChatService(q, srv, nil, nil, nil)
 	h := NewHandler(svc)
 	r := chi.NewRouter()

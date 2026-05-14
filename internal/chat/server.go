@@ -12,13 +12,15 @@ import (
 )
 
 type TCPServer struct {
-	addr        string
-	listener    net.Listener
-	mu          sync.RWMutex
-	conns       map[string]*Connection
-	onConnect   func(conn *Connection)
-	onDisconnect func(conn *Connection)
-	onMessage   func(conn *Connection, frame *Frame)
+	addr             string
+	listener         net.Listener
+	mu               sync.RWMutex
+	conns            map[string]*Connection
+	onConnect        func(conn *Connection)
+	onDisconnect     func(conn *Connection)
+	onMessage        func(conn *Connection, frame *Frame)
+	authTimeout      time.Duration
+	heartbeatTimeout time.Duration
 }
 
 type Connection struct {
@@ -57,10 +59,12 @@ func (c *Connection) IsInRoom(roomID string) bool {
 	return ok
 }
 
-func NewTCPServer(addr string) *TCPServer {
+func NewTCPServer(addr string, authTimeout, heartbeatTimeout time.Duration) *TCPServer {
 	return &TCPServer{
-		addr:  addr,
-		conns: make(map[string]*Connection),
+		addr:             addr,
+		conns:            make(map[string]*Connection),
+		authTimeout:      authTimeout,
+		heartbeatTimeout: heartbeatTimeout,
 	}
 }
 
@@ -101,6 +105,20 @@ func (s *TCPServer) acceptLoop() {
 		if s.onConnect != nil {
 			s.onConnect(c)
 		}
+
+		// Close connection if it doesn't authenticate within authTimeout.
+		if s.authTimeout > 0 {
+			go func() {
+				time.Sleep(s.authTimeout)
+				c.mu.Lock()
+				authenticated := c.UserID != ""
+				c.mu.Unlock()
+				if !authenticated {
+					c.Conn.Close()
+				}
+			}()
+		}
+
 		go s.readLoop(c)
 	}
 }
@@ -116,10 +134,17 @@ func (s *TCPServer) readLoop(c *Connection) {
 		}
 	}()
 
+	if s.heartbeatTimeout > 0 {
+		c.Conn.SetReadDeadline(time.Now().Add(s.heartbeatTimeout))
+	}
+
 	for {
 		frame, err := DecodeFrame(c.Conn)
 		if err != nil {
-			return
+			return // includes deadline exceeded
+		}
+		if s.heartbeatTimeout > 0 {
+			c.Conn.SetReadDeadline(time.Now().Add(s.heartbeatTimeout))
 		}
 		if s.onMessage != nil {
 			s.onMessage(c, frame)

@@ -276,7 +276,7 @@ func (c *captureConn) SetWriteDeadline(t time.Time) error { return nil }
 
 func TestNewChatService(t *testing.T) {
 	q := &mockQuerier{}
-	srv := NewTCPServer("127.0.0.1:0") // port 0 lets OS pick a free port
+	srv := NewTCPServer("127.0.0.1:0", 0, 0) // port 0 lets OS pick a free port
 	bc := &mockBlockChecker{}
 	ps := &mockPresenceSetter{}
 	tv := &mockTokenValidator{userID: "user-1"}
@@ -304,7 +304,7 @@ func TestNewChatService(t *testing.T) {
 
 func TestNewChatService_NilDependencies(t *testing.T) {
 	q := &mockQuerier{}
-	srv := NewTCPServer("127.0.0.1:0")
+	srv := NewTCPServer("127.0.0.1:0", 0, 0)
 
 	// All optional deps are nil -- service should still be created
 	svc := NewChatService(q, srv, nil, nil, nil)
@@ -315,7 +315,7 @@ func TestNewChatService_NilDependencies(t *testing.T) {
 
 func TestChatService_StartStop(t *testing.T) {
 	q := &mockQuerier{}
-	srv := NewTCPServer("127.0.0.1:0")
+	srv := NewTCPServer("127.0.0.1:0", 0, 0)
 	svc := NewChatService(q, srv, nil, nil, nil)
 
 	if err := svc.Start(); err != nil {
@@ -328,7 +328,7 @@ func TestChatService_StartStop(t *testing.T) {
 
 func TestChatService_HandleConnect(t *testing.T) {
 	q := &mockQuerier{}
-	srv := NewTCPServer("127.0.0.1:0")
+	srv := NewTCPServer("127.0.0.1:0", 0, 0)
 	ps := &mockPresenceSetter{}
 	svc := NewChatService(q, srv, nil, ps, nil)
 
@@ -341,7 +341,7 @@ func TestChatService_HandleConnect(t *testing.T) {
 
 func TestChatService_HandleDisconnect_SetsOffline(t *testing.T) {
 	q := &mockQuerier{}
-	srv := NewTCPServer("127.0.0.1:0")
+	srv := NewTCPServer("127.0.0.1:0", 0, 0)
 	ps := &mockPresenceSetter{}
 	svc := NewChatService(q, srv, nil, ps, nil)
 
@@ -361,7 +361,7 @@ func TestChatService_HandleDisconnect_SetsOffline(t *testing.T) {
 
 func TestChatService_HandleDisconnect_NoUserID(t *testing.T) {
 	q := &mockQuerier{}
-	srv := NewTCPServer("127.0.0.1:0")
+	srv := NewTCPServer("127.0.0.1:0", 0, 0)
 	ps := &mockPresenceSetter{}
 	svc := NewChatService(q, srv, nil, ps, nil)
 
@@ -377,7 +377,7 @@ func TestChatService_HandleDisconnect_NoUserID(t *testing.T) {
 
 func TestChatService_HandleDisconnect_NilPresenceSetter(t *testing.T) {
 	q := &mockQuerier{}
-	srv := NewTCPServer("127.0.0.1:0")
+	srv := NewTCPServer("127.0.0.1:0", 0, 0)
 	svc := NewChatService(q, srv, nil, nil, nil)
 
 	conn := testConn("conn-3")
@@ -390,7 +390,7 @@ func TestChatService_HandleDisconnect_NilPresenceSetter(t *testing.T) {
 
 func TestChatService_HandleAuth_ValidToken(t *testing.T) {
 	q := &mockQuerier{}
-	srv := NewTCPServer("127.0.0.1:0")
+	srv := NewTCPServer("127.0.0.1:0", 0, 0)
 	tv := &mockTokenValidator{userID: "user-42"}
 	svc := NewChatService(q, srv, nil, nil, tv)
 
@@ -410,7 +410,7 @@ func TestChatService_HandleAuth_ValidToken(t *testing.T) {
 
 func TestChatService_HandleAuth_InvalidToken(t *testing.T) {
 	q := &mockQuerier{}
-	srv := NewTCPServer("127.0.0.1:0")
+	srv := NewTCPServer("127.0.0.1:0", 0, 0)
 	tv := &mockTokenValidator{err: sql.ErrNoRows} // any non-nil error
 	svc := NewChatService(q, srv, nil, nil, tv)
 
@@ -428,7 +428,7 @@ func TestChatService_HandleAuth_InvalidToken(t *testing.T) {
 
 func TestChatService_HandleAuth_FallbackWithoutValidator(t *testing.T) {
 	q := &mockQuerier{}
-	srv := NewTCPServer("127.0.0.1:0")
+	srv := NewTCPServer("127.0.0.1:0", 0, 0)
 	svc := NewChatService(q, srv, nil, nil, nil) // no tokenValidator
 
 	conn := testConn("conn-3")
@@ -448,7 +448,7 @@ func TestChatService_HandleAuth_FallbackWithoutValidator(t *testing.T) {
 
 func TestChatService_HandleAuth_MissingToken(t *testing.T) {
 	q := &mockQuerier{}
-	srv := NewTCPServer("127.0.0.1:0")
+	srv := NewTCPServer("127.0.0.1:0", 0, 0)
 	tv := &mockTokenValidator{userID: "should-not-be-used"}
 	svc := NewChatService(q, srv, nil, nil, tv)
 
@@ -474,7 +474,7 @@ func TestChatService_HandleJoinRoom_Success(t *testing.T) {
 			Role:   "member",
 		},
 	}
-	srv := NewTCPServer("127.0.0.1:0")
+	srv := NewTCPServer("127.0.0.1:0", 0, 0)
 	svc := NewChatService(q, srv, nil, nil, nil)
 
 	conn := testConn("conn-1")
@@ -491,7 +491,7 @@ func TestChatService_HandleJoinRoom_Success(t *testing.T) {
 
 func TestChatService_HandleJoinRoom_Unauthenticated(t *testing.T) {
 	q := &mockQuerier{}
-	srv := NewTCPServer("127.0.0.1:0")
+	srv := NewTCPServer("127.0.0.1:0", 0, 0)
 	svc := NewChatService(q, srv, nil, nil, nil)
 
 	conn := testConn("conn-2") // no UserID
@@ -510,7 +510,7 @@ func TestChatService_HandleJoinRoom_DBError(t *testing.T) {
 	q := &mockQuerier{
 		membErr2: sql.ErrConnDone,
 	}
-	srv := NewTCPServer("127.0.0.1:0")
+	srv := NewTCPServer("127.0.0.1:0", 0, 0)
 	svc := NewChatService(q, srv, nil, nil, nil)
 
 	conn := testConn("conn-3")
@@ -537,7 +537,7 @@ func TestChatService_HandleLeaveRoom_Success(t *testing.T) {
 			Role:   "member",
 		},
 	}
-	srv := NewTCPServer("127.0.0.1:0")
+	srv := NewTCPServer("127.0.0.1:0", 0, 0)
 	svc := NewChatService(q, srv, nil, nil, nil)
 
 	conn := testConn("conn-1")
@@ -555,7 +555,7 @@ func TestChatService_HandleLeaveRoom_Success(t *testing.T) {
 
 func TestChatService_HandleLeaveRoom_Unauthenticated(t *testing.T) {
 	q := &mockQuerier{}
-	srv := NewTCPServer("127.0.0.1:0")
+	srv := NewTCPServer("127.0.0.1:0", 0, 0)
 	svc := NewChatService(q, srv, nil, nil, nil)
 
 	conn := testConn("conn-2") // no UserID
@@ -568,7 +568,7 @@ func TestChatService_HandleLeaveRoom_Unauthenticated(t *testing.T) {
 
 func TestChatService_HandleSendMessage_Unauthenticated(t *testing.T) {
 	q := &mockQuerier{}
-	srv := NewTCPServer("127.0.0.1:0")
+	srv := NewTCPServer("127.0.0.1:0", 0, 0)
 	svc := NewChatService(q, srv, nil, nil, nil)
 
 	conn := testConn("conn-1") // no UserID
@@ -583,7 +583,7 @@ func TestChatService_HandleSendMessage_Unauthenticated(t *testing.T) {
 
 func TestChatService_HandleSendMessage_NotInRoom(t *testing.T) {
 	q := &mockQuerier{}
-	srv := NewTCPServer("127.0.0.1:0")
+	srv := NewTCPServer("127.0.0.1:0", 0, 0)
 	svc := NewChatService(q, srv, nil, nil, nil)
 
 	conn := testConn("conn-1")
@@ -607,7 +607,7 @@ func TestChatService_HandleSendMessage_BlockedByMember(t *testing.T) {
 		},
 	}
 	bc := &mockBlockChecker{blocked: true}
-	srv := NewTCPServer("127.0.0.1:0")
+	srv := NewTCPServer("127.0.0.1:0", 0, 0)
 	svc := NewChatService(q, srv, bc, nil, nil)
 
 	conn := testConn("conn-1")
@@ -639,7 +639,7 @@ func TestChatService_HandleSendMessage_Success(t *testing.T) {
 		},
 	}
 	bc := &mockBlockChecker{blocked: false}
-	srv := NewTCPServer("127.0.0.1:0")
+	srv := NewTCPServer("127.0.0.1:0", 0, 0)
 	svc := NewChatService(q, srv, bc, nil, nil)
 
 	conn := testConn("conn-1")
@@ -655,7 +655,7 @@ func TestChatService_HandleSendMessage_Success(t *testing.T) {
 
 func TestChatService_HandleInviteRoom_Unauthenticated(t *testing.T) {
 	q := &mockQuerier{}
-	srv := NewTCPServer("127.0.0.1:0")
+	srv := NewTCPServer("127.0.0.1:0", 0, 0)
 	svc := NewChatService(q, srv, nil, nil, nil)
 
 	conn := testConn("conn-1") // no UserID
@@ -668,7 +668,7 @@ func TestChatService_HandleInviteRoom_Unauthenticated(t *testing.T) {
 
 func TestChatService_HandleInviteRoom_InvalidRoomID(t *testing.T) {
 	q := &mockQuerier{}
-	srv := NewTCPServer("127.0.0.1:0")
+	srv := NewTCPServer("127.0.0.1:0", 0, 0)
 	svc := NewChatService(q, srv, nil, nil, nil)
 
 	conn := testConn("conn-1")
@@ -690,7 +690,7 @@ func TestChatService_HandleInviteRoom_NotInRoom(t *testing.T) {
 			{ID: uuid.New(), RoomID: roomID, UserID: otherUser, Role: "owner"},
 		},
 	}
-	srv := NewTCPServer("127.0.0.1:0")
+	srv := NewTCPServer("127.0.0.1:0", 0, 0)
 	svc := NewChatService(q, srv, nil, nil, nil)
 
 	conn := testConn("conn-1")
@@ -712,7 +712,7 @@ func TestChatService_HandleInviteRoom_Success(t *testing.T) {
 			{ID: uuid.New(), RoomID: roomID, UserID: userID, Role: "owner"},
 		},
 	}
-	srv := NewTCPServer("127.0.0.1:0")
+	srv := NewTCPServer("127.0.0.1:0", 0, 0)
 	svc := NewChatService(q, srv, nil, nil, nil)
 
 	conn := testConn("conn-1")
@@ -734,7 +734,7 @@ func TestChatService_HandleInviteRoom_InviterUsername(t *testing.T) {
 			{ID: uuid.New(), RoomID: roomID, UserID: userID, Role: "owner"},
 		},
 	}
-	srv := NewTCPServer("127.0.0.1:0")
+	srv := NewTCPServer("127.0.0.1:0", 0, 0)
 	svc := NewChatService(q, srv, nil, nil, nil)
 
 	// Set up the target user's connection so SendToUser can find it.
@@ -786,7 +786,7 @@ func TestChatService_HandleInviteRoom_InviterUsername(t *testing.T) {
 
 func TestChatService_HandleMessage_Auth(t *testing.T) {
 	q := &mockQuerier{}
-	srv := NewTCPServer("127.0.0.1:0")
+	srv := NewTCPServer("127.0.0.1:0", 0, 0)
 	tv := &mockTokenValidator{userID: "user-99"}
 	svc := NewChatService(q, srv, nil, nil, tv)
 
@@ -804,7 +804,7 @@ func TestChatService_HandleMessage_Auth(t *testing.T) {
 
 func TestChatService_HandleMessage_InvalidProto(t *testing.T) {
 	q := &mockQuerier{}
-	srv := NewTCPServer("127.0.0.1:0")
+	srv := NewTCPServer("127.0.0.1:0", 0, 0)
 	svc := NewChatService(q, srv, nil, nil, nil)
 
 	conn := testConn("conn-1")

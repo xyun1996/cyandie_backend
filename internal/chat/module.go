@@ -2,6 +2,7 @@ package chat
 
 import (
 	"context"
+	"time"
 
 	"github.com/cyandie/backend/internal/core"
 	"github.com/cyandie/backend/internal/db"
@@ -17,7 +18,7 @@ type Module struct {
 }
 
 func NewModule(queries db.Querier, tcpAddr string, blockChecker BlockChecker, presenceSetter PresenceSetter, tokenValidator TokenValidator) *Module {
-	server := NewTCPServer(tcpAddr)
+	server := NewTCPServer(tcpAddr, 30*time.Second, 90*time.Second)
 	service := NewChatService(queries, server, blockChecker, presenceSetter, tokenValidator)
 	handler := NewHandler(service)
 	notifier := NewChatPresenceNotifier(server)
