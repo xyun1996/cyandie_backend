@@ -31,6 +31,9 @@ type mockFriendsQueries struct {
 	// GetFriendshipByUsers mock fields
 	friendshipByUsers    db.Friendship
 	friendshipByUsersErr error
+
+	// DeleteFriendshipByUsers call tracking
+	deleteByUsersCalls int32
 }
 
 func (m *mockFriendsQueries) CreateFriendship(_ context.Context, _ db.CreateFriendshipParams) (db.Friendship, error) {
@@ -156,6 +159,7 @@ func (m *mockFriendsQueries) IsBlockedBy(_ context.Context, _ db.IsBlockedByPara
 	return m.isBlockedID, m.isBlockedErr
 }
 func (m *mockFriendsQueries) DeleteFriendshipByUsers(_ context.Context, _ db.DeleteFriendshipByUsersParams) (db.Friendship, error) {
+	m.deleteByUsersCalls++
 	return m.deleteByUsers, m.deleteByUsersErr
 }
 func (m *mockFriendsQueries) ListRoomsByUser(_ context.Context, _ uuid.UUID) ([]db.ChatRoom, error) { return nil, nil }
@@ -247,9 +251,9 @@ func TestFriendsService_Block(t *testing.T) {
 	blocker := uuid.New()
 	blocked := uuid.New()
 	q := &mockFriendsQueries{
-		blockRelation: db.BlockRelation{BlockerID: blocker, BlockedID: blocked},
-		friendErr:     sql.ErrNoRows,
-		isBlockedErr:  sql.ErrNoRows,
+		blockRelation:        db.BlockRelation{BlockerID: blocker, BlockedID: blocked},
+		friendshipByUsersErr: sql.ErrNoRows,
+		isBlockedErr:         sql.ErrNoRows,
 	}
 	svc := NewFriendsService(q, nil, nil)
 
@@ -266,6 +270,31 @@ func TestFriendsService_Block_Self(t *testing.T) {
 	err := svc.Block(context.Background(), uid, uid, "")
 	if err == nil {
 		t.Error("expected error for self-block")
+	}
+}
+
+func TestFriendsService_Block_DeletesPendingFriendship(t *testing.T) {
+	blocker := uuid.New()
+	blocked := uuid.New()
+	q := &mockFriendsQueries{
+		blockRelation: db.BlockRelation{BlockerID: blocker, BlockedID: blocked},
+		friendshipByUsers: db.Friendship{
+			ID:     uuid.New(),
+			UserID: blocked,
+			FriendID: blocker,
+			Status: "pending",
+		},
+		friendshipByUsersErr: nil,
+		isBlockedErr:        sql.ErrNoRows,
+	}
+	svc := NewFriendsService(q, nil, nil)
+
+	err := svc.Block(context.Background(), blocker.String(), blocked.String(), "spam")
+	if err != nil {
+		t.Fatalf("Block failed: %v", err)
+	}
+	if q.deleteByUsersCalls != 1 {
+		t.Errorf("expected deleteByUsersCalls=1, got %d", q.deleteByUsersCalls)
 	}
 }
 

@@ -233,21 +233,16 @@ func (s *FriendsService) Block(ctx context.Context, blockerID, blockedID, reason
 		return errors.New(errors.ErrInternal, "failed to create block relation")
 	}
 
-	// Delete friendship if exists
-	_, _ = s.queries.DeleteFriendshipByUsers(ctx, db.DeleteFriendshipByUsersParams{
+	// Delete any existing friendship (in either direction)
+	existing, err := s.queries.GetFriendshipByUsers(ctx, db.GetFriendshipByUsersParams{
 		UserID:   bid,
 		FriendID: blid,
 	})
-
-	// Reject pending friend requests involving both users
-	pending, _ := s.queries.ListPendingRequests(ctx, bid)
-	for _, f := range pending {
-		if f.Status == pendingStatus && (f.FriendID == blid || f.UserID == blid) {
-			s.queries.UpdateFriendshipStatus(ctx, db.UpdateFriendshipStatusParams{
-				ID:     f.ID,
-				Status: "rejected",
-			})
-		}
+	if err == nil {
+		_, _ = s.queries.DeleteFriendshipByUsers(ctx, db.DeleteFriendshipByUsersParams{
+			UserID:   existing.UserID,
+			FriendID: existing.FriendID,
+		})
 	}
 
 	// Update Redis cache
