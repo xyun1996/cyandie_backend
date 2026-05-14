@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/cyandie/backend/internal/auth"
 	"github.com/cyandie/backend/internal/db"
@@ -124,10 +125,22 @@ func (h *Handler) getMessages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	limit := int32(50)
+	offset := int32(0)
+	if l, err := strconv.ParseInt(r.URL.Query().Get("limit"), 10, 32); err == nil && l > 0 {
+		limit = int32(l)
+		if limit > 200 {
+			limit = 200
+		}
+	}
+	if o, err := strconv.ParseInt(r.URL.Query().Get("offset"), 10, 32); err == nil && o >= 0 {
+		offset = int32(o)
+	}
+
 	messages, err := h.service.queries.GetChatMessages(r.Context(), db.GetChatMessagesParams{
 		RoomID: roomUID,
-		Limit:  50,
-		Offset: 0,
+		Limit:  limit,
+		Offset: offset,
 	})
 	if err != nil {
 		http.Error(w, `{"error":"failed to get messages"}`, http.StatusInternalServerError)

@@ -309,3 +309,81 @@ func TestGetMessages_MessagesDBError(t *testing.T) {
 		t.Errorf("expected 500, got %d", rr.Code)
 	}
 }
+
+func TestGetMessages_PaginationDefaults(t *testing.T) {
+	uid := uuid.New()
+	roomID := uuid.New()
+	q := &mockQuerier{
+		members: []db.ChatRoomMember{
+			{ID: uuid.New(), RoomID: roomID, UserID: uid, Role: "member"},
+		},
+		messages: []db.ChatMessage{},
+	}
+	r := setupHandlerRouter(q)
+
+	req := httptest.NewRequest(http.MethodGet, "/rooms/"+roomID.String()+"/messages", nil)
+	req = req.WithContext(authCtx(uid.String()))
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rr.Code)
+	}
+	if q.lastGetMessagesLimit != 50 {
+		t.Errorf("expected default limit 50, got %d", q.lastGetMessagesLimit)
+	}
+	if q.lastGetMessagesOffset != 0 {
+		t.Errorf("expected default offset 0, got %d", q.lastGetMessagesOffset)
+	}
+}
+
+func TestGetMessages_PaginationCustom(t *testing.T) {
+	uid := uuid.New()
+	roomID := uuid.New()
+	q := &mockQuerier{
+		members: []db.ChatRoomMember{
+			{ID: uuid.New(), RoomID: roomID, UserID: uid, Role: "member"},
+		},
+		messages: []db.ChatMessage{},
+	}
+	r := setupHandlerRouter(q)
+
+	req := httptest.NewRequest(http.MethodGet, "/rooms/"+roomID.String()+"/messages?limit=100&offset=50", nil)
+	req = req.WithContext(authCtx(uid.String()))
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rr.Code)
+	}
+	if q.lastGetMessagesLimit != 100 {
+		t.Errorf("expected limit 100, got %d", q.lastGetMessagesLimit)
+	}
+	if q.lastGetMessagesOffset != 50 {
+		t.Errorf("expected offset 50, got %d", q.lastGetMessagesOffset)
+	}
+}
+
+func TestGetMessages_PaginationMaxLimit(t *testing.T) {
+	uid := uuid.New()
+	roomID := uuid.New()
+	q := &mockQuerier{
+		members: []db.ChatRoomMember{
+			{ID: uuid.New(), RoomID: roomID, UserID: uid, Role: "member"},
+		},
+		messages: []db.ChatMessage{},
+	}
+	r := setupHandlerRouter(q)
+
+	req := httptest.NewRequest(http.MethodGet, "/rooms/"+roomID.String()+"/messages?limit=999&offset=0", nil)
+	req = req.WithContext(authCtx(uid.String()))
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rr.Code)
+	}
+	if q.lastGetMessagesLimit != 200 {
+		t.Errorf("expected limit clamped to 200, got %d", q.lastGetMessagesLimit)
+	}
+}

@@ -29,6 +29,9 @@ type mockQuerier struct {
 	membErr2 error
 	message  db.ChatMessage
 	msgErr   error
+
+	lastGetMessagesLimit  int32
+	lastGetMessagesOffset int32
 }
 
 // chat-specific methods with configurable behaviour
@@ -39,7 +42,9 @@ func (m *mockQuerier) ListRoomsByUser(_ context.Context, _ uuid.UUID) ([]db.Chat
 func (m *mockQuerier) GetChatRoom(_ context.Context, _ uuid.UUID) (db.ChatRoom, error) {
 	return m.room, m.roomErr
 }
-func (m *mockQuerier) GetChatMessages(_ context.Context, _ db.GetChatMessagesParams) ([]db.ChatMessage, error) {
+func (m *mockQuerier) GetChatMessages(_ context.Context, p db.GetChatMessagesParams) ([]db.ChatMessage, error) {
+	m.lastGetMessagesLimit = p.Limit
+	m.lastGetMessagesOffset = p.Offset
 	return m.messages, m.msgsErr
 }
 func (m *mockQuerier) GetRoomMembers(_ context.Context, _ uuid.UUID) ([]db.ChatRoomMember, error) {
