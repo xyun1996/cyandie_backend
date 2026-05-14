@@ -19,6 +19,9 @@ type mockAdminQueries struct {
 	statusErr error
 	logs      []db.AuditLog
 	logsErr   error
+
+	// auditLogParams captures the last CreateAuditLog call's parameters.
+	auditLogParams db.CreateAuditLogParams
 }
 
 type mockAuthService struct{}
@@ -31,7 +34,8 @@ func (m *mockAdminQueries) CreateAdminUser(_ context.Context, _ db.CreateAdminUs
 func (m *mockAdminQueries) GetAdminByUsername(_ context.Context, _ string) (db.AdminUser, error) {
 	return m.admin, m.adminErr
 }
-func (m *mockAdminQueries) CreateAuditLog(_ context.Context, _ db.CreateAuditLogParams) (db.AuditLog, error) {
+func (m *mockAdminQueries) CreateAuditLog(_ context.Context, params db.CreateAuditLogParams) (db.AuditLog, error) {
+	m.auditLogParams = params
 	return db.AuditLog{}, nil
 }
 func (m *mockAdminQueries) ListAuditLogs(_ context.Context, _ db.ListAuditLogsParams) ([]db.AuditLog, error) {

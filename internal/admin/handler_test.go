@@ -417,3 +417,50 @@ func TestAdminHandler_ListAuditLogs_WithAuth(t *testing.T) {
 		t.Errorf("expected 200, got %d; body: %s", rec.Code, rec.Body.String())
 	}
 }
+
+func TestAdminHandler_UpdateUserStatus_AuditLogOperatorID(t *testing.T) {
+	operatorUUID := uuid.New()
+	targetUUID := uuid.New()
+
+	q := &mockAdminQueries{
+		status: db.User{ID: targetUUID, Username: "user1", Status: "banned"},
+	}
+	svc := NewAdminService(q, mockAuthService{})
+	handler := NewAdminHandler(svc)
+	authSvc := newTestAuthService()
+	router := newTestRouter(handler, authSvc)
+
+	// Generate a token with a known userID so we can verify it shows up as operatorID.
+	token, err := authSvc.GenerateToken(operatorUUID.String())
+	if err != nil {
+		t.Fatalf("failed to generate token: %v", err)
+	}
+
+	body, _ := json.Marshal(map[string]string{"status": "banned"})
+	req := httptest.NewRequest(http.MethodPut, "/users/"+targetUUID.String()+"/status", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+token)
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d; body: %s", rec.Code, rec.Body.String())
+	}
+
+	// Verify that the audit log received the correct operatorID from the JWT context.
+	if !q.auditLogParams.OperatorID.Valid {
+		t.Fatal("expected OperatorID to be valid in audit log, but it was zero/invalid")
+	}
+	if q.auditLogParams.OperatorID.UUID != operatorUUID {
+		t.Errorf("expected operatorID %s, got %s", operatorUUID, q.auditLogParams.OperatorID.UUID)
+	}
+	if q.auditLogParams.Action != "update_user_status" {
+		t.Errorf("expected action update_user_status, got %s", q.auditLogParams.Action)
+	}
+	if q.auditLogParams.TargetType != "user" {
+		t.Errorf("expected target type user, got %s", q.auditLogParams.TargetType)
+	}
+	if q.auditLogParams.TargetID != targetUUID.String() {
+		t.Errorf("expected targetID %s, got %s", targetUUID.String(), q.auditLogParams.TargetID)
+	}
+}

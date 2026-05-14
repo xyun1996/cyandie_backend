@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	coreerrors "github.com/cyandie/backend/internal/core/errors"
+	"github.com/cyandie/backend/internal/auth"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -66,7 +67,8 @@ func (h *AdminHandler) UpdateUserStatus(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	_, _ = h.service.CreateAuditLog(r.Context(), "", "update_user_status", "user", userID, "status: "+body.Status, r.RemoteAddr)
+	operatorID := auth.UserIDFromContext(r.Context())
+	_, _ = h.service.CreateAuditLog(r.Context(), operatorID, "update_user_status", "user", userID, "status: "+body.Status, r.RemoteAddr)
 
 	writeJSON(w, http.StatusOK, user)
 }
