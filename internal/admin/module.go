@@ -33,6 +33,7 @@ func (m *Module) RegisterRoutes(router chi.Router) {
 	mux.Post("/login", m.handler.Login)
 	mux.Group(func(r chi.Router) {
 		r.Use(auth.AuthGuard(m.authSvc))
+		r.Use(auth.RequireAdmin())
 		r.Get("/users", m.handler.ListUsers)
 		r.Put("/users/{id}/status", m.handler.UpdateUserStatus)
 		r.Get("/audit-logs", m.handler.ListAuditLogs)

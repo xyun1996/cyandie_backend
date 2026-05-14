@@ -13,6 +13,7 @@ type contextKey string
 const (
 	UserIDKey    contextKey = "user_id"
 	SessionIDKey contextKey = "session_id"
+	RoleKey      contextKey = "role"
 )
 
 func AuthGuard(svc *AuthService) func(http.Handler) http.Handler {
@@ -51,4 +52,22 @@ func UserIDFromContext(ctx context.Context) string {
 func SessionIDFromContext(ctx context.Context) string {
 	val, _ := ctx.Value(SessionIDKey).(string)
 	return val
+}
+
+func RoleFromContext(ctx context.Context) string {
+	val, _ := ctx.Value(RoleKey).(string)
+	return val
+}
+
+func RequireAdmin() func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			role, _ := r.Context().Value(RoleKey).(string)
+			if role != "admin" {
+				http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
 }

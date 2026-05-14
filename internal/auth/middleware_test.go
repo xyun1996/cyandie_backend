@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestAuthGuard_ValidToken(t *testing.T) {
@@ -66,4 +67,38 @@ func TestAuthGuard_InvalidToken(t *testing.T) {
 	if rec.Code != http.StatusUnauthorized {
 		t.Errorf("expected 401, got %d", rec.Code)
 	}
+}
+
+func TestRequireAdmin_RejectsNonAdmin(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	mw := RequireAdmin()
+	next := mw(handler)
+
+	req := httptest.NewRequest(http.MethodGet, "/admin/users", nil)
+	ctx := context.WithValue(req.Context(), RoleKey, "user")
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	next.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusForbidden, w.Code)
+}
+
+func TestRequireAdmin_AllowsAdmin(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	mw := RequireAdmin()
+	next := mw(handler)
+
+	req := httptest.NewRequest(http.MethodGet, "/admin/users", nil)
+	ctx := context.WithValue(req.Context(), RoleKey, "admin")
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	next.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
 }

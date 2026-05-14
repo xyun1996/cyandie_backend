@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/cyandie/backend/internal/core"
 	"github.com/cyandie/backend/internal/db"
@@ -32,6 +33,11 @@ func (m *Module) Name() string { return "auth" }
 
 // Service returns the auth service for middleware wiring.
 func (m *Module) Service() *AuthService { return m.svc }
+
+// RequireAdmin returns middleware that rejects requests from non-admin users.
+func (m *Module) RequireAdmin() func(http.Handler) http.Handler {
+	return RequireAdmin()
+}
 
 func (m *Module) Dependencies() []string { return []string{"users"} }
 
