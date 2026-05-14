@@ -150,6 +150,12 @@ func main() {
 	friendsModule := friends.NewModule(queries, rdb.Client, chatModule.PresenceNotifier())
 	app.Register(friendsModule)
 
+	// Load block relations into Redis cache so IsBlocked answers from cache
+	if err := friendsModule.LoadBlockCache(context.Background()); err != nil {
+		log.Error("load block cache", "error", err)
+		os.Exit(1)
+	}
+
 	// Wire block checker from friends back to chat
 	chatModule.SetBlockChecker(friendsModule.BlockChecker())
 

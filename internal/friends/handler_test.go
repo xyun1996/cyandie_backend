@@ -171,6 +171,9 @@ func (m *handlerMockQueries) ListAuditLogs(_ context.Context, _ db.ListAuditLogs
 	return nil, nil
 }
 func (m *handlerMockQueries) ListRoomsByUser(_ context.Context, _ uuid.UUID) ([]db.ChatRoom, error) { return nil, nil }
+func (m *handlerMockQueries) ListAllBlockRelations(_ context.Context) ([]db.BlockRelation, error) {
+	return nil, nil
+}
 
 // ---------------------------------------------------------------------------
 // helpers

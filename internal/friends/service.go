@@ -323,6 +323,23 @@ func (s *FriendsService) ListBlockedUsers(ctx context.Context, userID string) ([
 	return s.queries.ListBlockedUsers(ctx, uid)
 }
 
+// LoadBlockCache loads all block relations from the database into Redis sets
+// so that IsBlocked can answer from cache without falling back to the DB.
+// This should be called on startup to pre-warm the cache.
+func (s *FriendsService) LoadBlockCache(ctx context.Context) error {
+	if s.rdb == nil {
+		return nil
+	}
+	blocks, err := s.queries.ListAllBlockRelations(ctx)
+	if err != nil {
+		return err
+	}
+	for _, b := range blocks {
+		s.rdb.SAdd(ctx, fmt.Sprintf("friends:blocked:%s", b.BlockerID.String()), b.BlockedID.String())
+	}
+	return nil
+}
+
 // RemoveFriend deletes the friendship between two users and notifies the other party.
 func (s *FriendsService) RemoveFriend(ctx context.Context, userID, friendID string) error {
 	uid, err := uuid.Parse(userID)

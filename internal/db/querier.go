@@ -44,6 +44,7 @@ type Querier interface {
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
 	IsBlockedBy(ctx context.Context, arg IsBlockedByParams) (uuid.UUID, error)
+	ListAllBlockRelations(ctx context.Context) ([]BlockRelation, error)
 	ListAuditLogs(ctx context.Context, arg ListAuditLogsParams) ([]AuditLog, error)
 	ListBlockedUsers(ctx context.Context, blockerID uuid.UUID) ([]BlockRelation, error)
 	ListFriends(ctx context.Context, userID uuid.UUID) ([]Friendship, error)

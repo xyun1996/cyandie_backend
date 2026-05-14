@@ -182,6 +182,39 @@ func (q *Queries) IsBlockedBy(ctx context.Context, arg IsBlockedByParams) (uuid.
 	return id, err
 }
 
+const listAllBlockRelations = `-- name: ListAllBlockRelations :many
+SELECT id, blocker_id, blocked_id, reason, created_at FROM block_relations ORDER BY created_at DESC
+`
+
+func (q *Queries) ListAllBlockRelations(ctx context.Context) ([]BlockRelation, error) {
+	rows, err := q.db.QueryContext(ctx, listAllBlockRelations)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []BlockRelation{}
+	for rows.Next() {
+		var i BlockRelation
+		if err := rows.Scan(
+			&i.ID,
+			&i.BlockerID,
+			&i.BlockedID,
+			&i.Reason,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listBlockedUsers = `-- name: ListBlockedUsers :many
 SELECT id, blocker_id, blocked_id, reason, created_at FROM block_relations WHERE blocker_id = $1 ORDER BY created_at DESC
 `

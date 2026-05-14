@@ -181,6 +181,9 @@ func (m *mockQuerier) IsBlockedBy(_ context.Context, _ db.IsBlockedByParams) (uu
 func (m *mockQuerier) DeleteFriendshipByUsers(_ context.Context, _ db.DeleteFriendshipByUsersParams) (db.Friendship, error) {
 	return db.Friendship{}, nil
 }
+func (m *mockQuerier) ListAllBlockRelations(_ context.Context) ([]db.BlockRelation, error) {
+	return nil, nil
+}
 
 // ---------------------------------------------------------------------------
 // mock dependencies for ChatService

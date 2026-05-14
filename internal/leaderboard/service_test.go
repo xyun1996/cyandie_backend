@@ -165,6 +165,9 @@ func (m *mockLBQueries) DeleteFriendshipByUsers(_ context.Context, _ db.DeleteFr
 	return db.Friendship{}, nil
 }
 func (m *mockLBQueries) ListRoomsByUser(_ context.Context, _ uuid.UUID) ([]db.ChatRoom, error) { return nil, nil }
+func (m *mockLBQueries) ListAllBlockRelations(_ context.Context) ([]db.BlockRelation, error) {
+	return nil, nil
+}
 
 func newTestLBService() *LeaderboardService {
 	q := &mockLBQueries{config: db.LeaderboardConfig{

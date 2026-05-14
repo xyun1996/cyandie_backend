@@ -196,6 +196,9 @@ func (s *stubQueriesForAuth) DeleteFriendshipByUsers(_ context.Context, _ db.Del
 func (s *stubQueriesForAuth) ListRoomsByUser(_ context.Context, _ uuid.UUID) ([]db.ChatRoom, error) {
 	return nil, nil
 }
+func (s *stubQueriesForAuth) ListAllBlockRelations(_ context.Context) ([]db.BlockRelation, error) {
+	return nil, nil
+}
 func (s *stubQueriesForAuth) CreateAdminUser(_ context.Context, _ db.CreateAdminUserParams) (db.AdminUser, error) {
 	return db.AdminUser{}, nil
 }

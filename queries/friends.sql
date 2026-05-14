@@ -42,3 +42,6 @@ SELECT id FROM block_relations WHERE blocker_id = $1 AND blocked_id = $2;
 
 -- name: DeleteFriendshipByUsers :one
 DELETE FROM friendships WHERE (user_id = $1 AND friend_id = $2) OR (user_id = $2 AND friend_id = $1) RETURNING *;
+
+-- name: ListAllBlockRelations :many
+SELECT * FROM block_relations ORDER BY created_at DESC;

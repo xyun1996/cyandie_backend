@@ -3,10 +3,13 @@ package friends
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"testing"
 
+	"github.com/alicebob/miniredis/v2"
 	"github.com/cyandie/backend/internal/db"
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 )
 
 type mockFriendsQueries struct {
@@ -34,6 +37,10 @@ type mockFriendsQueries struct {
 
 	// DeleteFriendshipByUsers call tracking
 	deleteByUsersCalls int32
+
+	// ListAllBlockRelations mock fields
+	allBlockRelations    []db.BlockRelation
+	allBlockRelationsErr error
 }
 
 func (m *mockFriendsQueries) CreateFriendship(_ context.Context, _ db.CreateFriendshipParams) (db.Friendship, error) {
@@ -163,6 +170,9 @@ func (m *mockFriendsQueries) DeleteFriendshipByUsers(_ context.Context, _ db.Del
 	return m.deleteByUsers, m.deleteByUsersErr
 }
 func (m *mockFriendsQueries) ListRoomsByUser(_ context.Context, _ uuid.UUID) ([]db.ChatRoom, error) { return nil, nil }
+func (m *mockFriendsQueries) ListAllBlockRelations(_ context.Context) ([]db.BlockRelation, error) {
+	return m.allBlockRelations, m.allBlockRelationsErr
+}
 
 func TestFriendsService_SendRequest(t *testing.T) {
 	from := uuid.New()
@@ -357,5 +367,40 @@ func TestFriendsService_RemoveFriend(t *testing.T) {
 	err := svc.RemoveFriend(context.Background(), user.String(), friend.String())
 	if err != nil {
 		t.Fatalf("RemoveFriend failed: %v", err)
+	}
+}
+
+func TestFriendsService_LoadBlockCache(t *testing.T) {
+	blocker1 := uuid.New()
+	blocked1 := uuid.New()
+	q := &mockFriendsQueries{
+		allBlockRelations: []db.BlockRelation{
+			{BlockerID: blocker1, BlockedID: blocked1},
+		},
+	}
+	mr := miniredis.RunT(t)
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+	svc := NewFriendsService(q, rdb, nil)
+
+	err := svc.LoadBlockCache(context.Background())
+	if err != nil {
+		t.Fatalf("LoadBlockCache failed: %v", err)
+	}
+
+	// Verify the Redis set was populated
+	isMember, err := rdb.SIsMember(context.Background(), fmt.Sprintf("friends:blocked:%s", blocker1), blocked1.String()).Result()
+	if err != nil || !isMember {
+		t.Error("expected blocked user to be in Redis set")
+	}
+}
+
+func TestFriendsService_LoadBlockCache_NilRedis(t *testing.T) {
+	q := &mockFriendsQueries{}
+	svc := NewFriendsService(q, nil, nil)
+
+	err := svc.LoadBlockCache(context.Background())
+	if err != nil {
+		t.Fatalf("LoadBlockCache should return nil when Redis is nil, got: %v", err)
 	}
 }

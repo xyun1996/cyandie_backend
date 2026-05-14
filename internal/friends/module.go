@@ -51,3 +51,8 @@ func (m *Module) PresenceSetter() PresenceSetter { return m.service }
 
 func (m *Module) OnStart(_ context.Context) error { return nil }
 func (m *Module) OnStop(_ context.Context) error  { return nil }
+
+// LoadBlockCache pre-warms the Redis block cache from the database.
+func (m *Module) LoadBlockCache(ctx context.Context) error {
+	return m.service.LoadBlockCache(ctx)
+}

@@ -153,3 +153,6 @@ func (m *mockUserQueries) DeleteFriendshipByUsers(_ context.Context, _ db.Delete
 	return db.Friendship{}, nil
 }
 func (m *mockUserQueries) ListRoomsByUser(_ context.Context, _ uuid.UUID) ([]db.ChatRoom, error) { return nil, nil }
+func (m *mockUserQueries) ListAllBlockRelations(_ context.Context) ([]db.BlockRelation, error) {
+	return nil, nil
+}

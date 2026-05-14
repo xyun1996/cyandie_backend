@@ -168,6 +168,9 @@ func (m *platformMockQueries) DeleteFriendshipByUsers(_ context.Context, _ db.De
 	return db.Friendship{}, nil
 }
 func (m *platformMockQueries) ListRoomsByUser(_ context.Context, _ uuid.UUID) ([]db.ChatRoom, error) { return nil, nil }
+func (m *platformMockQueries) ListAllBlockRelations(_ context.Context) ([]db.BlockRelation, error) {
+	return nil, nil
+}
 
 func newTestPlatformService() *PlatformService {
 	reg := NewPlatformRegistry()

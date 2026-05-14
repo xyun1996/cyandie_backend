@@ -155,6 +155,9 @@ func (m *mockAdminQueries) DeleteFriendshipByUsers(_ context.Context, _ db.Delet
 	return db.Friendship{}, nil
 }
 func (m *mockAdminQueries) ListRoomsByUser(_ context.Context, _ uuid.UUID) ([]db.ChatRoom, error) { return nil, nil }
+func (m *mockAdminQueries) ListAllBlockRelations(_ context.Context) ([]db.BlockRelation, error) {
+	return nil, nil
+}
 
 func TestAdminService_Login_Success(t *testing.T) {
 	hash, _ := bcrypt.GenerateFromPassword([]byte("pass123"), bcrypt.DefaultCost)
