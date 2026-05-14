@@ -30,6 +30,9 @@ func NewModule(queries db.Querier, km *KeyManager, sessions *SessionStore) *Modu
 
 func (m *Module) Name() string { return "auth" }
 
+// Service returns the auth service for middleware wiring.
+func (m *Module) Service() *AuthService { return m.svc }
+
 func (m *Module) Dependencies() []string { return []string{"users"} }
 
 func (m *Module) RegisterServices(reg *core.ServiceRegistry) {

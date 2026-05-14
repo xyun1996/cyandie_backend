@@ -30,11 +30,7 @@ func (h *AdminHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]any{
-		"id":       admin.ID.String(),
-		"username": admin.Username,
-		"role":     admin.Role,
-	})
+	writeJSON(w, http.StatusOK, admin)
 }
 
 func (h *AdminHandler) ListUsers(w http.ResponseWriter, r *http.Request) {

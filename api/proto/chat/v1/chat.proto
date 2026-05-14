@@ -25,7 +25,7 @@ enum MessageType {
   ERROR = 65535;
 }
 
-message AuthRequest { string access_token = 1; }
+message AuthRequest { string access_token = 1; string username = 2; }
 message AuthResponse { string user_id = 1; string session_id = 2; }
 message Heartbeat {}
 message HeartbeatAck {}

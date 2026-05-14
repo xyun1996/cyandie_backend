@@ -16,14 +16,29 @@ type BlockChecker interface {
 	IsBlocked(ctx context.Context, targetUserID, byUserID string) (bool, error)
 }
 
-type ChatService struct {
-	queries      db.Querier
-	server       *TCPServer
-	blockChecker BlockChecker
+// PresenceSetter updates online/offline status for presence.
+// Defined locally to avoid circular import with friends package.
+type PresenceSetter interface {
+	SetOnline(ctx context.Context, userID, username string) error
+	SetOffline(ctx context.Context, userID string) error
 }
 
-func NewChatService(queries db.Querier, server *TCPServer, blockChecker BlockChecker) *ChatService {
-	return &ChatService{queries: queries, server: server, blockChecker: blockChecker}
+// TokenValidator validates JWT tokens and returns the user ID.
+// Defined locally to avoid circular import with auth package.
+type TokenValidator interface {
+	ValidateToken(ctx context.Context, token string) (userID string, err error)
+}
+
+type ChatService struct {
+	queries         db.Querier
+	server          *TCPServer
+	blockChecker    BlockChecker
+	presenceSetter  PresenceSetter
+	tokenValidator  TokenValidator
+}
+
+func NewChatService(queries db.Querier, server *TCPServer, blockChecker BlockChecker, presenceSetter PresenceSetter, tokenValidator TokenValidator) *ChatService {
+	return &ChatService{queries: queries, server: server, blockChecker: blockChecker, presenceSetter: presenceSetter, tokenValidator: tokenValidator}
 }
 
 func (s *ChatService) setBlockChecker(checker BlockChecker) {
@@ -45,6 +60,9 @@ func (s *ChatService) handleConnect(conn *Connection) {
 
 func (s *ChatService) handleDisconnect(conn *Connection) {
 	slog.Info("client disconnected", "conn_id", conn.ID, "user_id", conn.UserID)
+	if conn.UserID != "" && s.presenceSetter != nil {
+		s.presenceSetter.SetOffline(context.Background(), conn.UserID)
+	}
 }
 
 func (s *ChatService) handleMessage(conn *Connection, frame *Frame) {
@@ -59,6 +77,9 @@ func (s *ChatService) handleMessage(conn *Connection, frame *Frame) {
 		s.handleAuth(conn, env)
 	case chatv1.MessageType_HEARTBEAT:
 		conn.Send(Frame{Type: uint16(chatv1.MessageType_HEARTBEAT_ACK)})
+		if conn.UserID != "" && s.presenceSetter != nil {
+			s.presenceSetter.SetOnline(context.Background(), conn.UserID, conn.Username)
+		}
 	case chatv1.MessageType_JOIN_ROOM:
 		s.handleJoinRoom(conn, env)
 	case chatv1.MessageType_LEAVE_ROOM:
@@ -76,9 +97,19 @@ func (s *ChatService) handleAuth(conn *Connection, env *chatv1.ChatEnvelope) {
 		s.sendError(conn, "BAD_REQUEST", "missing access token")
 		return
 	}
-	// TODO: validate JWT token via AuthService
-	// For now, accept the token as user_id
-	conn.UserID = req.AccessToken
+
+	if s.tokenValidator != nil {
+		userID, err := s.tokenValidator.ValidateToken(context.Background(), req.AccessToken)
+		if err != nil {
+			s.sendError(conn, "AUTH_REJECTED", "invalid token")
+			return
+		}
+		conn.UserID = userID
+	} else {
+		// Fallback: accept token as user_id (for testing)
+		conn.UserID = req.AccessToken
+	}
+	conn.Username = req.Username
 
 	resp := &chatv1.ChatEnvelope{
 		Type: chatv1.MessageType_AUTH_OK,
@@ -117,6 +148,7 @@ func (s *ChatService) handleJoinRoom(conn *Connection, env *chatv1.ChatEnvelope)
 		},
 	}
 	s.sendEnvelope(conn, resp)
+	conn.JoinRoom(req.RoomId)
 }
 
 func (s *ChatService) handleLeaveRoom(conn *Connection, env *chatv1.ChatEnvelope) {
@@ -132,9 +164,15 @@ func (s *ChatService) handleLeaveRoom(conn *Connection, env *chatv1.ChatEnvelope
 
 	uid, _ := uuid.Parse(conn.UserID)
 	roomUID, _ := uuid.Parse(req.RoomId)
-	s.queries.RemoveRoomMember(context.Background(), db.RemoveRoomMemberParams{
+	_, err := s.queries.RemoveRoomMember(context.Background(), db.RemoveRoomMemberParams{
 		RoomID: roomUID, UserID: uid,
 	})
+	if err != nil {
+		s.sendError(conn, "INTERNAL_ERROR", "failed to leave room")
+		return
+	}
+
+	conn.LeaveRoom(req.RoomId)
 
 	resp := &chatv1.ChatEnvelope{
 		Type: chatv1.MessageType_LEAVE_ROOM_OK,
@@ -156,8 +194,34 @@ func (s *ChatService) handleSendMessage(conn *Connection, env *chatv1.ChatEnvelo
 		return
 	}
 
+	roomUID, err := uuid.Parse(req.RoomId)
+	if err != nil {
+		s.sendError(conn, "BAD_REQUEST", "invalid room id")
+		return
+	}
+
+	// Verify sender is in the room
+	if !conn.IsInRoom(req.RoomId) {
+		s.sendError(conn, "FORBIDDEN", "you are not in this room")
+		return
+	}
+
+	// Check if any room member has blocked the sender
+	if s.blockChecker != nil {
+		members, _ := s.queries.GetRoomMembers(context.Background(), roomUID)
+		for _, m := range members {
+			if m.UserID.String() == conn.UserID {
+				continue
+			}
+			blocked, _ := s.blockChecker.IsBlocked(context.Background(), conn.UserID, m.UserID.String())
+			if blocked {
+				s.sendError(conn, "FORBIDDEN", "you are blocked by a room member")
+				return
+			}
+		}
+	}
+
 	uid, _ := uuid.Parse(conn.UserID)
-	roomUID, _ := uuid.Parse(req.RoomId)
 	msg, err := s.queries.CreateChatMessage(context.Background(), db.CreateChatMessageParams{
 		RoomID:   roomUID,
 		SenderID: uid,

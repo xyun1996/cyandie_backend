@@ -12,9 +12,9 @@ func TestHandler_GetRanking(t *testing.T) {
 	svc := newTestLBService()
 	h := NewHandler(svc)
 	r := chi.NewRouter()
-	h.RegisterRoutes(r)
+	h.RegisterPublicRoutes(r)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/leaderboard/test-board?limit=10", nil)
+	req := httptest.NewRequest(http.MethodGet, "/test-board?limit=10", nil)
 	rec := httptest.NewRecorder()
 	r.ServeHTTP(rec, req)
 
@@ -27,15 +27,14 @@ func TestHandler_SubmitScore(t *testing.T) {
 	svc := newTestLBService()
 	h := NewHandler(svc)
 	r := chi.NewRouter()
-	h.RegisterRoutes(r)
+	h.RegisterProtectedRoutes(r)
 
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/leaderboard/test-board/submit", nil)
-	req.Header.Set("X-User-ID", "user-1")
+	req := httptest.NewRequest(http.MethodPost, "/test-board/submit", nil)
 	rec := httptest.NewRecorder()
 	r.ServeHTTP(rec, req)
 
-	// Should get 400 since no body, but at least not 500
-	if rec.Code == http.StatusInternalServerError {
-		t.Errorf("expected not 500, got %d", rec.Code)
+	// Should get 401 since no auth context
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("expected 401, got %d", rec.Code)
 	}
 }

@@ -16,9 +16,9 @@ type Module struct {
 	notifier *ChatPresenceNotifier
 }
 
-func NewModule(queries db.Querier, tcpAddr string, blockChecker BlockChecker) *Module {
+func NewModule(queries db.Querier, tcpAddr string, blockChecker BlockChecker, presenceSetter PresenceSetter, tokenValidator TokenValidator) *Module {
 	server := NewTCPServer(tcpAddr)
-	service := NewChatService(queries, server, blockChecker)
+	service := NewChatService(queries, server, blockChecker, presenceSetter, tokenValidator)
 	handler := NewHandler(service)
 	notifier := NewChatPresenceNotifier(server)
 	return &Module{handler: handler, service: service, server: server, notifier: notifier}
@@ -43,4 +43,14 @@ func (m *Module) PresenceNotifier() PresenceNotifier { return m.notifier }
 // SetBlockChecker allows late wiring of the block checker.
 func (m *Module) SetBlockChecker(checker BlockChecker) {
 	m.service.setBlockChecker(checker)
+}
+
+// SetPresenceSetter allows late wiring of the presence setter.
+func (m *Module) SetPresenceSetter(setter PresenceSetter) {
+	m.service.presenceSetter = setter
+}
+
+// SetTokenValidator allows late wiring of the token validator.
+func (m *Module) SetTokenValidator(validator TokenValidator) {
+	m.service.tokenValidator = validator
 }

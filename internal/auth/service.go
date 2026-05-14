@@ -139,6 +139,11 @@ func (s *AuthService) ValidateToken(ctx context.Context, accessToken string) (*C
 	return claims, nil
 }
 
+// GenerateToken generates a JWT for a given user without creating a session.
+func (s *AuthService) GenerateToken(userID string) (string, error) {
+	return s.keyManager.GenerateAccessToken(userID, "")
+}
+
 func (s *AuthService) generateTokenPair(ctx context.Context, userID string) (*TokenPair, error) {
 	sessionID := generateSessionID()
 	accessToken, err := s.keyManager.GenerateAccessToken(userID, sessionID)

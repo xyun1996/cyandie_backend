@@ -28,3 +28,10 @@ SELECT * FROM chat_messages
 WHERE room_id = $1
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3;
+
+-- name: ListRoomsByUser :many
+SELECT cr.id, cr.type, cr.name, cr.metadata, cr.created_at
+FROM chat_rooms cr
+JOIN chat_room_members crm ON cr.id = crm.room_id
+WHERE crm.user_id = $1
+ORDER BY cr.created_at DESC;

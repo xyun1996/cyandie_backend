@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/cyandie/backend/internal/auth"
 	coreerrors "github.com/cyandie/backend/internal/core/errors"
 	"github.com/go-chi/chi/v5"
 )
@@ -22,6 +23,20 @@ func (h *Handler) RegisterRoutes(router chi.Router) {
 	router.Get("/", h.listPlatforms)
 	router.Get("/{name}/auth-url", h.getAuthURL)
 	router.Post("/{name}/callback", h.callback)
+	router.Post("/{name}/bind", h.bind)
+	router.Delete("/{name}/bind", h.unbind)
+	router.Get("/bindings", h.listBindings)
+}
+
+// RegisterPublicRoutes registers routes that don't require authentication.
+func (h *Handler) RegisterPublicRoutes(router chi.Router) {
+	router.Get("/", h.listPlatforms)
+	router.Get("/{name}/auth-url", h.getAuthURL)
+	router.Post("/{name}/callback", h.callback)
+}
+
+// RegisterProtectedRoutes registers routes that require authentication.
+func (h *Handler) RegisterProtectedRoutes(router chi.Router) {
 	router.Post("/{name}/bind", h.bind)
 	router.Delete("/{name}/bind", h.unbind)
 	router.Get("/bindings", h.listBindings)
@@ -72,7 +87,7 @@ func (h *Handler) callback(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) bind(w http.ResponseWriter, r *http.Request) {
-	userID := r.Header.Get("X-User-ID")
+	userID := auth.UserIDFromContext(r.Context())
 	if userID == "" {
 		coreerrors.New(coreerrors.ErrUnauthorized, "authentication required").WriteHTTP(w)
 		return
@@ -93,7 +108,7 @@ func (h *Handler) bind(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) unbind(w http.ResponseWriter, r *http.Request) {
-	userID := r.Header.Get("X-User-ID")
+	userID := auth.UserIDFromContext(r.Context())
 	if userID == "" {
 		coreerrors.New(coreerrors.ErrUnauthorized, "authentication required").WriteHTTP(w)
 		return
@@ -107,7 +122,7 @@ func (h *Handler) unbind(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) listBindings(w http.ResponseWriter, r *http.Request) {
-	userID := r.Header.Get("X-User-ID")
+	userID := auth.UserIDFromContext(r.Context())
 	if userID == "" {
 		coreerrors.New(coreerrors.ErrUnauthorized, "authentication required").WriteHTTP(w)
 		return

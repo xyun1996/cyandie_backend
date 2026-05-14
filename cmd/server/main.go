@@ -32,6 +32,19 @@ type redisLimiterAdapter struct {
 	client *redis.Client
 }
 
+// tokenValidatorAdapter adapts auth.AuthService to the chat.TokenValidator interface.
+type tokenValidatorAdapter struct {
+	svc *auth.AuthService
+}
+
+func (a *tokenValidatorAdapter) ValidateToken(ctx context.Context, token string) (string, error) {
+	claims, err := a.svc.ValidateToken(ctx, token)
+	if err != nil {
+		return "", err
+	}
+	return claims.UserID, nil
+}
+
 func (a *redisLimiterAdapter) Incr(ctx context.Context, key string) *redis.IntCmd {
 	return a.client.Incr(ctx, key)
 }
@@ -102,6 +115,9 @@ func main() {
 	app.Register(usersModule)
 	app.Register(authModule)
 
+	// Auth guard for protected routes
+	authGuard := auth.AuthGuard(authModule.Service())
+
 	// Platform adapters
 	platformRegistry := platforms.NewPlatformRegistry()
 	if cfg.Platforms.WeChat.AppID != "" {
@@ -115,14 +131,19 @@ func main() {
 	app.Register(platformsModule)
 
 	// Chat module created first with nil block checker (wired later)
-	chatModule := chat.NewModule(queries, ":9091", nil)
+	chatModule := chat.NewModule(queries, ":9091", nil, nil, nil)
 	app.Register(chatModule)
-	chatModule.RegisterRoutes(router)
+
+	// Chat HTTP routes with auth guard
+	router.Route("/api/v1/chat", func(r chi.Router) {
+		r.Use(authGuard)
+		chatModule.RegisterRoutes(r)
+	})
 
 	leaderboardModule := leaderboard.NewModule(queries, rdb.Client)
 	app.Register(leaderboardModule)
 
-	adminModule := admin.NewModule(queries)
+	adminModule := admin.NewModule(queries, authModule.Service())
 	app.Register(adminModule)
 
 	// Friends module receives PresenceNotifier from chat
@@ -131,6 +152,12 @@ func main() {
 
 	// Wire block checker from friends back to chat
 	chatModule.SetBlockChecker(friendsModule.BlockChecker())
+
+	// Wire presence setter from friends to chat (heartbeat triggers SetOnline)
+	chatModule.SetPresenceSetter(friendsModule.PresenceSetter())
+
+	// Wire token validator from auth to chat (TCP auth validates JWT)
+	chatModule.SetTokenValidator(&tokenValidatorAdapter{svc: authModule.Service()})
 
 	healthHandler := health.NewHandler()
 	healthHandler.RegisterRoutes(router)
@@ -147,22 +174,30 @@ func main() {
 	// Platform routes with rate limiting
 	router.Route("/api/v1/platforms", func(r chi.Router) {
 		r.Use(authLimiter.Middleware("auth"))
-		platformsModule.RegisterRoutes(r)
+		platformsModule.RegisterPublicRoutes(r)
+		r.Group(func(r chi.Router) {
+			r.Use(authGuard)
+			platformsModule.RegisterProtectedRoutes(r)
+		})
 	})
 
-	// Leaderboard routes with rate limiting
+	// Leaderboard routes
 	router.Route("/api/v1/leaderboard", func(r chi.Router) {
 		readLimiter := middleware.NewRateLimiter(redisAdapter, middleware.RateLimitConfig(cfg.RateLimit.Read))
 		r.Use(readLimiter.Middleware("read"))
-		leaderboardModule.RegisterRoutes(r)
+		leaderboardModule.RegisterPublicRoutes(r)
+		r.Group(func(r chi.Router) {
+			r.Use(authGuard)
+			leaderboardModule.RegisterProtectedRoutes(r)
+		})
 	})
 
-	// Rate limited user routes
+	// Rate limited user routes (auth required)
 	readLimiter := middleware.NewRateLimiter(redisAdapter, middleware.RateLimitConfig{
 		Limit:  cfg.RateLimit.Read.Limit,
 		Window: cfg.RateLimit.Read.Window,
 	})
-	usersRouter := router.With(readLimiter.Middleware("read"))
+	usersRouter := router.With(authGuard, readLimiter.Middleware("read"))
 	usersModule.RegisterRoutes(usersRouter)
 
 	// Admin routes
@@ -170,7 +205,7 @@ func main() {
 
 	// Friends routes with auth guard
 	router.Route("/api/v1/friends", func(r chi.Router) {
-		r.Use(readLimiter.Middleware("read"))
+		r.Use(authGuard, readLimiter.Middleware("read"))
 		friendsModule.RegisterRoutes(r)
 	})
 

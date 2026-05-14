@@ -38,5 +38,15 @@ func (m *Module) RegisterRoutes(router chi.Router) {
 	m.handler.RegisterRoutes(router)
 }
 
+// RegisterPublicRoutes registers routes that don't require authentication.
+func (m *Module) RegisterPublicRoutes(router chi.Router) {
+	m.handler.RegisterPublicRoutes(router)
+}
+
+// RegisterProtectedRoutes registers routes that require authentication.
+func (m *Module) RegisterProtectedRoutes(router chi.Router) {
+	m.handler.RegisterProtectedRoutes(router)
+}
+
 func (m *Module) OnStart(_ context.Context) error { return nil }
 func (m *Module) OnStop(_ context.Context) error  { return nil }

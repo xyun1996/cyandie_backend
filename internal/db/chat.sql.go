@@ -188,6 +188,43 @@ func (q *Queries) GetRoomMembers(ctx context.Context, roomID uuid.UUID) ([]ChatR
 	return items, nil
 }
 
+const listRoomsByUser = `-- name: ListRoomsByUser :many
+SELECT cr.id, cr.type, cr.name, cr.metadata, cr.created_at
+FROM chat_rooms cr
+JOIN chat_room_members crm ON cr.id = crm.room_id
+WHERE crm.user_id = $1
+ORDER BY cr.created_at DESC
+`
+
+func (q *Queries) ListRoomsByUser(ctx context.Context, userID uuid.UUID) ([]ChatRoom, error) {
+	rows, err := q.db.QueryContext(ctx, listRoomsByUser, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ChatRoom{}
+	for rows.Next() {
+		var i ChatRoom
+		if err := rows.Scan(
+			&i.ID,
+			&i.Type,
+			&i.Name,
+			&i.Metadata,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const removeRoomMember = `-- name: RemoveRoomMember :one
 DELETE FROM chat_room_members WHERE room_id = $1 AND user_id = $2
 RETURNING id, room_id, user_id, role, joined_at

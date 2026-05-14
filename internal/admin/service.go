@@ -17,14 +17,27 @@ type AdminLoginRequest struct {
 }
 
 type AdminService struct {
-	queries db.Querier
+	queries   db.Querier
+	authSvc   AuthService
 }
 
-func NewAdminService(queries db.Querier) *AdminService {
-	return &AdminService{queries: queries}
+// AuthService generates and validates JWT tokens.
+type AuthService interface {
+	GenerateToken(userID string) (string, error)
 }
 
-func (s *AdminService) Login(ctx context.Context, req AdminLoginRequest) (*db.AdminUser, error) {
+func NewAdminService(queries db.Querier, authSvc AuthService) *AdminService {
+	return &AdminService{queries: queries, authSvc: authSvc}
+}
+
+type AdminLoginResponse struct {
+	ID          string `json:"id"`
+	Username    string `json:"username"`
+	Role        string `json:"role"`
+	AccessToken string `json:"access_token"`
+}
+
+func (s *AdminService) Login(ctx context.Context, req AdminLoginRequest) (*AdminLoginResponse, error) {
 	if req.Username == "" || req.Password == "" {
 		return nil, errors.New(errors.ErrInvalidCredentials, "username and password are required")
 	}
@@ -42,7 +55,17 @@ func (s *AdminService) Login(ctx context.Context, req AdminLoginRequest) (*db.Ad
 		return nil, errors.New(errors.ErrInvalidCredentials, "invalid credentials")
 	}
 
-	return &admin, nil
+	token, err := s.authSvc.GenerateToken(admin.ID.String())
+	if err != nil {
+		return nil, errors.New(errors.ErrInternal, "failed to generate token")
+	}
+
+	return &AdminLoginResponse{
+		ID:          admin.ID.String(),
+		Username:    admin.Username,
+		Role:        admin.Role,
+		AccessToken: token,
+	}, nil
 }
 
 func (s *AdminService) ListUsers(ctx context.Context, limit, offset int32) ([]db.User, error) {

@@ -3,6 +3,7 @@ package leaderboard
 import (
 	"context"
 	"fmt"
+	"math"
 
 	"github.com/cyandie/backend/internal/core/errors"
 	"github.com/cyandie/backend/internal/db"
@@ -28,12 +29,20 @@ func NewLeaderboardService(queries db.Querier, redis redisClient) *LeaderboardSe
 }
 
 func (s *LeaderboardService) SubmitScore(ctx context.Context, boardCode string, userID string, score float64) error {
+	if math.IsNaN(score) || math.IsInf(score, 0) || score < 0 {
+		return errors.New(errors.ErrBadRequest, "invalid score value")
+	}
+
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		return errors.New(errors.ErrBadRequest, "invalid user id")
+	}
+
 	config, err := s.queries.GetLeaderboardConfig(ctx, boardCode)
 	if err != nil {
 		return errors.New(errors.ErrNotFound, "leaderboard not found")
 	}
 
-	uid, _ := uuid.Parse(userID)
 	_, err = s.queries.CreateScore(ctx, db.CreateScoreParams{
 		BoardID: config.ID,
 		UserID:  uid,

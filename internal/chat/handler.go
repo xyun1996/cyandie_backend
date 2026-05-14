@@ -1,60 +1,139 @@
 package chat
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
-	"strconv"
 
-	coreerrors "github.com/cyandie/backend/internal/core/errors"
+	"github.com/cyandie/backend/internal/auth"
+	"github.com/cyandie/backend/internal/db"
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
+	"github.com/sqlc-dev/pqtype"
 )
 
 type Handler struct {
-	svc *ChatService
+	service *ChatService
 }
 
-func NewHandler(svc *ChatService) *Handler {
-	return &Handler{svc: svc}
+func NewHandler(service *ChatService) *Handler {
+	return &Handler{service: service}
 }
 
-func (h *Handler) RegisterRoutes(router chi.Router) {
-	router.Get("/api/v1/chat/rooms", h.listRooms)
-	router.Post("/api/v1/chat/rooms", h.createRoom)
-	router.Get("/api/v1/chat/rooms/{id}/messages", h.getMessages)
+func (h *Handler) RegisterRoutes(r chi.Router) {
+	r.Get("/rooms", h.listRooms)
+	r.Post("/rooms", h.createRoom)
+	r.Get("/rooms/{roomID}/messages", h.getMessages)
 }
 
 func (h *Handler) listRooms(w http.ResponseWriter, r *http.Request) {
-	// TODO: implement room listing
-	writeChatJSON(w, http.StatusOK, []any{})
+	userID := auth.UserIDFromContext(r.Context())
+	if userID == "" {
+		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		http.Error(w, `{"error":"invalid user id"}`, http.StatusBadRequest)
+		return
+	}
+
+	rooms, err := h.service.queries.ListRoomsByUser(r.Context(), uid)
+	if err != nil {
+		http.Error(w, `{"error":"failed to list rooms"}`, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(rooms)
+}
+
+type createRoomRequest struct {
+	Type     string `json:"type"`
+	Name     string `json:"name"`
+	Metadata string `json:"metadata,omitempty"`
 }
 
 func (h *Handler) createRoom(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		Type string `json:"type"`
-		Name string `json:"name"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		coreerrors.New(coreerrors.ErrBadRequest, "invalid request body").WriteHTTP(w)
+	userID := auth.UserIDFromContext(r.Context())
+	if userID == "" {
+		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
 		return
 	}
-	// TODO: implement room creation
-	writeChatJSON(w, http.StatusCreated, map[string]string{"status": "created"})
+
+	var req createRoomRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error":"invalid request body"}`, http.StatusBadRequest)
+		return
+	}
+
+	room, err := h.service.queries.CreateChatRoom(r.Context(), db.CreateChatRoomParams{
+		Type:     req.Type,
+		Name:     sql.NullString{String: req.Name, Valid: req.Name != ""},
+		Metadata: pqtype.NullRawMessage{RawMessage: []byte(req.Metadata), Valid: req.Metadata != ""},
+	})
+	if err != nil {
+		http.Error(w, `{"error":"failed to create room"}`, http.StatusInternalServerError)
+		return
+	}
+
+	// Add creator as member
+	uid, _ := uuid.Parse(userID)
+	_, _ = h.service.queries.AddRoomMember(r.Context(), db.AddRoomMemberParams{
+		RoomID: room.ID,
+		UserID: uid,
+		Role:   "owner",
+	})
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(room)
 }
 
 func (h *Handler) getMessages(w http.ResponseWriter, r *http.Request) {
-	roomID := chi.URLParam(r, "id")
-	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-	_, _ = strconv.Atoi(r.URL.Query().Get("offset"))
-	if limit <= 0 || limit > 100 {
-		limit = 20
+	userID := auth.UserIDFromContext(r.Context())
+	if userID == "" {
+		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+		return
 	}
-	// TODO: implement message history query
-	_ = roomID
-	writeChatJSON(w, http.StatusOK, []any{})
-}
 
-func writeChatJSON(w http.ResponseWriter, status int, data any) {
+	roomID := chi.URLParam(r, "roomID")
+	roomUID, err := uuid.Parse(roomID)
+	if err != nil {
+		http.Error(w, `{"error":"invalid room id"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Verify user is a member of the room
+	members, err := h.service.queries.GetRoomMembers(r.Context(), roomUID)
+	if err != nil {
+		http.Error(w, `{"error":"room not found"}`, http.StatusNotFound)
+		return
+	}
+
+	isMember := false
+	for _, m := range members {
+		if m.UserID.String() == userID {
+			isMember = true
+			break
+		}
+	}
+	if !isMember {
+		http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
+		return
+	}
+
+	messages, err := h.service.queries.GetChatMessages(r.Context(), db.GetChatMessagesParams{
+		RoomID: roomUID,
+		Limit:  50,
+		Offset: 0,
+	})
+	if err != nil {
+		http.Error(w, `{"error":"failed to get messages"}`, http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(map[string]any{"ok": true, "data": data})
+	json.NewEncoder(w).Encode(messages)
 }

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/cyandie/backend/internal/auth"
 	coreerrors "github.com/cyandie/backend/internal/core/errors"
 	"github.com/go-chi/chi/v5"
 )
@@ -42,7 +43,7 @@ func (h *FriendsHandler) SendRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fromID, _ := r.Context().Value("userID").(string)
+	fromID := auth.UserIDFromContext(r.Context())
 	friendship, err := h.service.SendRequest(r.Context(), fromID, body.ToUserID)
 	if err != nil {
 		writeAppError(w, err)
@@ -74,7 +75,7 @@ func (h *FriendsHandler) RejectRequest(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *FriendsHandler) ListFriends(w http.ResponseWriter, r *http.Request) {
-	userID, _ := r.Context().Value("userID").(string)
+	userID := auth.UserIDFromContext(r.Context())
 	friendships, err := h.service.ListFriends(r.Context(), userID)
 	if err != nil {
 		writeAppError(w, err)
@@ -85,7 +86,7 @@ func (h *FriendsHandler) ListFriends(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *FriendsHandler) ListPendingRequests(w http.ResponseWriter, r *http.Request) {
-	userID, _ := r.Context().Value("userID").(string)
+	userID := auth.UserIDFromContext(r.Context())
 	requests, err := h.service.ListPendingRequests(r.Context(), userID)
 	if err != nil {
 		writeAppError(w, err)
@@ -96,7 +97,7 @@ func (h *FriendsHandler) ListPendingRequests(w http.ResponseWriter, r *http.Requ
 }
 
 func (h *FriendsHandler) GetOnlineFriends(w http.ResponseWriter, r *http.Request) {
-	userID, _ := r.Context().Value("userID").(string)
+	userID := auth.UserIDFromContext(r.Context())
 	online, err := h.service.GetOnlineFriends(r.Context(), userID)
 	if err != nil {
 		writeAppError(w, err)
@@ -107,7 +108,7 @@ func (h *FriendsHandler) GetOnlineFriends(w http.ResponseWriter, r *http.Request
 }
 
 func (h *FriendsHandler) Block(w http.ResponseWriter, r *http.Request) {
-	userID, _ := r.Context().Value("userID").(string)
+	userID := auth.UserIDFromContext(r.Context())
 	var req struct {
 		UserID string `json:"user_id"`
 		Reason string `json:"reason"`
@@ -124,7 +125,7 @@ func (h *FriendsHandler) Block(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *FriendsHandler) Unblock(w http.ResponseWriter, r *http.Request) {
-	userID, _ := r.Context().Value("userID").(string)
+	userID := auth.UserIDFromContext(r.Context())
 	blockedUserID := chi.URLParam(r, "userID")
 	if err := h.service.Unblock(r.Context(), userID, blockedUserID); err != nil {
 		writeAppError(w, err)
@@ -134,7 +135,7 @@ func (h *FriendsHandler) Unblock(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *FriendsHandler) ListBlocked(w http.ResponseWriter, r *http.Request) {
-	userID, _ := r.Context().Value("userID").(string)
+	userID := auth.UserIDFromContext(r.Context())
 	blocked, err := h.service.ListBlockedUsers(r.Context(), userID)
 	if err != nil {
 		writeAppError(w, err)
@@ -144,7 +145,7 @@ func (h *FriendsHandler) ListBlocked(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *FriendsHandler) RemoveFriend(w http.ResponseWriter, r *http.Request) {
-	userID, _ := r.Context().Value("userID").(string)
+	userID := auth.UserIDFromContext(r.Context())
 	friendUserID := chi.URLParam(r, "userID")
 	if err := h.service.RemoveFriend(r.Context(), userID, friendUserID); err != nil {
 		writeAppError(w, err)
@@ -154,7 +155,7 @@ func (h *FriendsHandler) RemoveFriend(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *FriendsHandler) ListRecentContacts(w http.ResponseWriter, r *http.Request) {
-	userID, _ := r.Context().Value("userID").(string)
+	userID := auth.UserIDFromContext(r.Context())
 	limit := 20
 	if l := r.URL.Query().Get("limit"); l != "" {
 		if v, err := strconv.Atoi(l); err == nil && v > 0 && v <= 100 {

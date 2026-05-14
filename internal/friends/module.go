@@ -9,6 +9,12 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+// PresenceSetter updates online/offline status for presence.
+type PresenceSetter interface {
+	SetOnline(ctx context.Context, userID, username string) error
+	SetOffline(ctx context.Context, userID string) error
+}
+
 type Module struct {
 	core.BaseModule
 	handler *FriendsHandler
@@ -39,6 +45,9 @@ func (m *Module) RegisterRoutes(router chi.Router) {
 
 // BlockChecker returns the service as a BlockChecker for the chat module.
 func (m *Module) BlockChecker() BlockChecker { return m.service }
+
+// PresenceSetter returns the service as a PresenceSetter for the chat module.
+func (m *Module) PresenceSetter() PresenceSetter { return m.service }
 
 func (m *Module) OnStart(_ context.Context) error { return nil }
 func (m *Module) OnStop(_ context.Context) error  { return nil }

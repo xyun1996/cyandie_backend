@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/cyandie/backend/internal/auth"
 	coreerrors "github.com/cyandie/backend/internal/core/errors"
 	"github.com/go-chi/chi/v5"
 )
@@ -18,9 +19,20 @@ func NewHandler(svc *LeaderboardService) *Handler {
 }
 
 func (h *Handler) RegisterRoutes(router chi.Router) {
-	router.Get("/api/v1/leaderboard/{code}", h.getRanking)
-	router.Post("/api/v1/leaderboard/{code}/submit", h.submitScore)
-	router.Get("/api/v1/leaderboard/{code}/me", h.getMyRank)
+	router.Get("/{code}", h.getRanking)
+	router.Post("/{code}/submit", h.submitScore)
+	router.Get("/{code}/me", h.getMyRank)
+}
+
+// RegisterPublicRoutes registers routes that don't require authentication.
+func (h *Handler) RegisterPublicRoutes(router chi.Router) {
+	router.Get("/{code}", h.getRanking)
+}
+
+// RegisterProtectedRoutes registers routes that require authentication.
+func (h *Handler) RegisterProtectedRoutes(router chi.Router) {
+	router.Post("/{code}/submit", h.submitScore)
+	router.Get("/{code}/me", h.getMyRank)
 }
 
 func (h *Handler) getRanking(w http.ResponseWriter, r *http.Request) {
@@ -40,7 +52,7 @@ func (h *Handler) getRanking(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) submitScore(w http.ResponseWriter, r *http.Request) {
-	userID := r.Header.Get("X-User-ID")
+	userID := auth.UserIDFromContext(r.Context())
 	if userID == "" {
 		coreerrors.New(coreerrors.ErrUnauthorized, "authentication required").WriteHTTP(w)
 		return
@@ -63,7 +75,7 @@ func (h *Handler) submitScore(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) getMyRank(w http.ResponseWriter, r *http.Request) {
-	userID := r.Header.Get("X-User-ID")
+	userID := auth.UserIDFromContext(r.Context())
 	if userID == "" {
 		coreerrors.New(coreerrors.ErrUnauthorized, "authentication required").WriteHTTP(w)
 		return
