@@ -81,11 +81,14 @@ func (h *Handler) createRoom(w http.ResponseWriter, r *http.Request) {
 
 	// Add creator as member
 	uid, _ := uuid.Parse(userID)
-	_, _ = h.service.queries.AddRoomMember(r.Context(), db.AddRoomMemberParams{
+	if _, err := h.service.queries.AddRoomMember(r.Context(), db.AddRoomMemberParams{
 		RoomID: room.ID,
 		UserID: uid,
 		Role:   "owner",
-	})
+	}); err != nil {
+		http.Error(w, `{"error":"failed to add room member"}`, http.StatusInternalServerError)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)

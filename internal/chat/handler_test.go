@@ -174,6 +174,30 @@ func TestCreateRoom_Success(t *testing.T) {
 	}
 }
 
+func TestCreateRoom_AddRoomMemberError(t *testing.T) {
+	uid := uuid.New()
+	roomID := uuid.New()
+	q := &mockQuerier{
+		room: db.ChatRoom{
+			ID:   roomID,
+			Type: "group",
+			Name: sql.NullString{String: "general", Valid: true},
+		},
+		membErr2: sql.ErrConnDone,
+	}
+	r := setupHandlerRouter(q)
+
+	body := `{"type":"group","name":"general"}`
+	req := httptest.NewRequest(http.MethodPost, "/rooms", bytes.NewBufferString(body))
+	req = req.WithContext(authCtx(uid.String()))
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusInternalServerError {
+		t.Errorf("expected 500 on AddRoomMember error, got %d; body: %s", rr.Code, rr.Body.String())
+	}
+}
+
 func TestCreateRoom_DBError(t *testing.T) {
 	uid := uuid.New()
 	q := &mockQuerier{roomErr: sql.ErrConnDone}
