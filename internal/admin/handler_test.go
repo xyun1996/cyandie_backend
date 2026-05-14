@@ -235,7 +235,7 @@ func newTestRouter(handler *AdminHandler, authSvc *auth.AuthService) chi.Router 
 
 // generateTestToken creates a valid JWT using the test AuthService.
 func generateTestToken(authSvc *auth.AuthService) string {
-	token, err := authSvc.GenerateToken(uuid.New().String())
+	token, err := authSvc.GenerateToken(uuid.New().String(), "admin")
 	if err != nil {
 		panic("failed to generate test token: " + err.Error())
 	}
@@ -431,7 +431,7 @@ func TestAdminHandler_UpdateUserStatus_AuditLogOperatorID(t *testing.T) {
 	router := newTestRouter(handler, authSvc)
 
 	// Generate a token with a known userID so we can verify it shows up as operatorID.
-	token, err := authSvc.GenerateToken(operatorUUID.String())
+	token, err := authSvc.GenerateToken(operatorUUID.String(), "admin")
 	if err != nil {
 		t.Fatalf("failed to generate token: %v", err)
 	}

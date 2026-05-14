@@ -15,6 +15,7 @@ type JWTKey struct {
 type Claims struct {
 	UserID    string `json:"user_id"`
 	SessionID string `json:"session_id"`
+	Role      string `json:"role,omitempty"`
 	jwt.RegisteredClaims
 }
 
@@ -58,10 +59,11 @@ func (km *KeyManager) IsEmpty() bool {
 	return len(km.keys) == 0
 }
 
-func (km *KeyManager) GenerateAccessToken(userID, sessionID string) (string, error) {
+func (km *KeyManager) GenerateAccessToken(userID, sessionID, role string) (string, error) {
 	claims := &Claims{
 		UserID:    userID,
 		SessionID: sessionID,
+		Role:      role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

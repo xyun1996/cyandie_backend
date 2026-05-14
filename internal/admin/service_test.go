@@ -26,7 +26,7 @@ type mockAdminQueries struct {
 
 type mockAuthService struct{}
 
-func (mockAuthService) GenerateToken(_ string) (string, error) { return "mock-token", nil }
+func (mockAuthService) GenerateToken(_ string, _ string) (string, error) { return "mock-token", nil }
 
 func (m *mockAdminQueries) CreateAdminUser(_ context.Context, _ db.CreateAdminUserParams) (db.AdminUser, error) {
 	return db.AdminUser{}, nil

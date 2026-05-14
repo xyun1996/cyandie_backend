@@ -23,7 +23,7 @@ type AdminService struct {
 
 // AuthService generates and validates JWT tokens.
 type AuthService interface {
-	GenerateToken(userID string) (string, error)
+	GenerateToken(userID string, role string) (string, error)
 }
 
 func NewAdminService(queries db.Querier, authSvc AuthService) *AdminService {
@@ -55,7 +55,7 @@ func (s *AdminService) Login(ctx context.Context, req AdminLoginRequest) (*Admin
 		return nil, errors.New(errors.ErrInvalidCredentials, "invalid credentials")
 	}
 
-	token, err := s.authSvc.GenerateToken(admin.ID.String())
+	token, err := s.authSvc.GenerateToken(admin.ID.String(), admin.Role)
 	if err != nil {
 		return nil, errors.New(errors.ErrInternal, "failed to generate token")
 	}
